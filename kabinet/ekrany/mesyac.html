@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Семейный учёт — итог месяца</title>
+<style>
+/* Токены — из DESIGN.md проекта. Менять оба места вместе. */
+:root{
+  --page-bg:#faf9f7; --page-fg:#2b3038;
+  --card-bg:#ffffff; --card-fg:#2b3038;
+  --inset-bg:#f2f0ed; --inset-fg:#4e5560;
+  --head-bg:#333944; --head-fg:#f7f6f4;
+  --accent-bg:#1f63c9; --accent-fg:#ffffff;
+  --good:#0c7350; --warn:#7a5c00; --crit:#c33c2c;
+  --border:#e3e0dc; --ring:#1f63c9;
+  --c1:#2a6fd6; --c2:#d9682c; --c3:#12967a; --c4:#c98f16;
+  --r-card:12px; --r-ctl:8px; --r-tag:4px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s6:24px; --s8:32px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --page-bg:#1b1e23; --page-fg:#eceae7;
+    --card-bg:#23272e; --card-fg:#eceae7;
+    --inset-bg:#2a2f36; --inset-fg:#a8aeb8;
+    --head-bg:#0f1216; --head-fg:#f2f0ed;
+    --accent-bg:#5c9bf0; --accent-fg:#10141a;
+    --good:#39b483; --warn:#d3a13a; --crit:#e8705f;
+    --border:#343a42; --ring:#5c9bf0;
+    --c1:#5c9bf0; --c2:#e58b52; --c3:#3fb79a; --c4:#d9ab3f;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--page-bg); color:var(--page-fg);
+  font:400 14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1200px;margin:0 auto;padding:0 var(--s4)}
+@media (min-width:768px){.wrap{padding:0 var(--s6)}}
+
+/* --- шапка --- */
+.top{position:sticky;top:0;z-index:5;background:var(--head-bg);color:var(--head-fg);
+     border-bottom:1px solid var(--border)}
+.top .wrap{display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;
+           padding-top:var(--s3);padding-bottom:var(--s3)}
+h1{font-size:20px;line-height:1.25;font-weight:600;margin:0}
+.top .period{font-size:12px;font-weight:500;color:var(--head-fg);opacity:.75}
+.spacer{flex:1 1 auto}
+.who{font-size:12px;opacity:.75}
+
+/* --- кнопки --- */
+.btn{min-height:44px;padding:0 var(--s4);border-radius:var(--r-ctl);
+     font:600 14px/1 system-ui,sans-serif;cursor:pointer;border:1px solid transparent}
+.btn-main{background:var(--accent-bg);color:var(--accent-fg)}
+.btn-main:hover{filter:brightness(1.08)}
+.btn-main:active{filter:brightness(.92)}
+.btn-ghost{background:transparent;color:var(--head-fg);border-color:var(--border)}
+:where(a,button,summary,[tabindex]):focus-visible,.scroller:focus{
+  outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--r-tag)}
+
+/* --- секции и карточки --- */
+main{padding-bottom:var(--s8)}
+section{margin-top:var(--s6)}
+h2{font-size:15px;line-height:1.3;font-weight:600;margin:0 0 var(--s3)}
+h2 .hint{font-weight:400;font-size:14px;line-height:1.4;color:var(--inset-fg);margin-left:var(--s2)}
+.card{background:var(--card-bg);color:var(--card-fg);border:1px solid var(--border);
+      border-radius:var(--r-card);padding:var(--s4);min-width:0}
+.grid{display:grid;gap:var(--s3)}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.people{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.halves{grid-template-columns:1fr}
+@media (min-width:1024px){.halves{grid-template-columns:3fr 2fr;align-items:start}}
+
+/* --- плитка KPI --- */
+.kpi .lbl{font-size:12px;font-weight:500;color:var(--inset-fg);display:block}
+.kpi .val{font-size:30px;line-height:1.1;font-weight:650;display:block;margin:var(--s2) 0 var(--s1)}
+.kpi .base{font-size:12px;line-height:1.4;color:var(--inset-fg);display:block}
+.unit{font-size:16px;font-weight:500;color:var(--inset-fg)}
+
+/* --- участники --- */
+.person .name{font-weight:600;display:flex;align-items:baseline;gap:var(--s2)}
+.person .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.person .role{font-size:12px;color:var(--inset-fg);font-weight:400}
+.person dl{display:grid;grid-template-columns:1fr auto;gap:var(--s1) var(--s2);margin:var(--s3) 0 0}
+.person dt{font-size:12px;color:var(--inset-fg)}
+.person dd{margin:0;text-align:right;font-weight:500}
+.person dd.big{font-size:16px;font-weight:650}
+
+/* --- таблицы --- */
+.scroller{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px}
+caption{text-align:left;font-size:12px;color:var(--inset-fg);padding-bottom:var(--s2)}
+th,td{padding:var(--s2) var(--s2);border-bottom:1px solid var(--border);text-align:left;
+      vertical-align:top}
+thead th{background:var(--inset-bg);color:var(--inset-fg);font-size:12px;font-weight:500;
+         position:sticky;top:0}
+td.num,th.num{text-align:right;white-space:nowrap}
+tfoot td{border-top:2px solid var(--border);border-bottom:none;font-weight:600}
+tbody tr:last-child td{border-bottom:none}
+
+/* --- мелочи --- */
+.badge{display:inline-block;font-size:12px;padding:1px 6px;border-radius:var(--r-tag);
+       background:var(--inset-bg);color:var(--inset-fg)}
+.good{color:var(--good)} .warn{color:var(--warn)} .crit{color:var(--crit)}
+.muted{color:var(--inset-fg)}
+details{margin-top:var(--s3)}
+summary{cursor:pointer;font-size:14px;font-weight:500;min-height:44px;display:flex;
+        align-items:center;gap:var(--s2)}
+details[open] .chev{transform:rotate(90deg)}
+.chev{display:inline-block;transition:transform 160ms var(--ease-out)}
+@media (prefers-reduced-motion:reduce){.chev{transition:none}}
+.legend{display:flex;flex-wrap:wrap;gap:var(--s3);margin-top:var(--s2);font-size:12px;
+        color:var(--inset-fg)}
+.legend span{display:flex;align-items:center;gap:var(--s1)}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+.note{font-size:14px;color:var(--inset-fg);line-height:1.5;max-width:68ch}
+footer{margin-top:var(--s8);padding-top:var(--s4);border-top:1px solid var(--border)}
+</style><style>
+/* Новые блоки этого экрана. Общие приёмы — в словаре проекта выше. */
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;
+  color:var(--head-fg);text-decoration:none;font-weight:500;border-radius:var(--r-ctl)}
+.nav a:hover{box-shadow:inset 0 -2px 0 currentColor}
+.nav a[aria-current="page"]{font-weight:700;box-shadow:inset 0 -3px 0 currentColor}
+.podzag{font-size:13px;margin:0 0 var(--s2);font-weight:600}
+.shkala{margin-bottom:var(--s4)}
+.shkala:last-child{margin-bottom:0}
+.shkala-podpis{display:flex;justify-content:space-between;gap:var(--s3);
+  align-items:baseline;margin-bottom:var(--s1);flex-wrap:wrap}
+.shkala-znach{font-size:14px;font-weight:600;white-space:nowrap}
+.shkala-otkl{font-size:12px;margin-top:var(--s1);font-weight:600}
+.badge.warn{color:var(--warn);font-weight:600}
+.pusto{text-align:center;padding:var(--s8) var(--s4)}
+.pusto p{max-width:52ch}
+
+/* --- добавлено переработкой 18.08.2026: статус месяца вместо серого абзаца --- */
+.status{border-left:4px solid var(--border);padding-left:var(--s4)}
+.status.ur-crit{border-left-color:var(--crit)}
+.status.ur-warn{border-left-color:var(--warn)}
+.status.ur-good{border-left-color:var(--good)}
+.status .zag{font-size:18px;line-height:1.3;font-weight:650;margin:0 0 var(--s3)}
+.status .zag.crit{color:var(--crit)} .status .zag.warn{color:var(--warn)}
+.status .zag.good{color:var(--good)}
+.status dl{display:grid;grid-template-columns:1fr auto;gap:var(--s2) var(--s4);
+           margin:0 0 var(--s3);max-width:46ch}
+.status dt{color:var(--inset-fg);font-size:14px}
+.status dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.status dd.krupno{font-size:22px;line-height:1.15;font-weight:700}
+
+/* строка-заголовок группы внутри таблицы «Кто что получил» */
+tr.grp th{background:var(--inset-bg);font-size:13px;letter-spacing:.01em;padding-top:var(--s3)}
+tr.grp .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+tr.grp .sum{float:right;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* причина под числом участника — словами, а не только знаком минуса */
+.person .prichina{font-size:14px;line-height:1.45;color:var(--inset-fg);
+                  margin:var(--s2) 0 0;border-top:1px solid var(--border);padding-top:var(--s2)}
+</style>
+<script>
+/* Кабинет открывается двумя путями: прямо (localhost:8090 дома, 8772 на
+   сервере) и через дашборд по адресу /uchet — тогда прокси кладёт сюда
+   window.PREFIX. Все ссылки и запросы строятся от PRE, поэтому оба пути живут
+   без правок в коде экранов. */
+const PRE = window.PREFIX || "";
+addEventListener("DOMContentLoaded", () => { if(!PRE) return;
+  document.querySelectorAll('a[href^="/"]').forEach(a =>
+    a.setAttribute("href", PRE + a.getAttribute("href")));
+});
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>Семейный учёт</h1>
+    <label class="period" for="mes">месяц</label>
+    <select id="mes" style="min-height:44px;min-width:120px;border-radius:8px;padding:0 8px"></select>
+    <span class="spacer"></span>
+    <nav class="nav" aria-label="Разделы кабинета" data-region="nav"></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="pusto" class="card pusto" style="display:none" data-region="pusto">
+    <h2 id="pusto-zag" style="font-size:18px">—</h2>
+    <p class="note" id="pusto-text" style="margin:0 auto var(--s4)">—</p>
+    <a class="btn btn-main" id="pusto-knopka" href="/vvod"
+       style="display:inline-flex;align-items:center;text-decoration:none">Записать операцию</a>
+  </section>
+
+  <section data-region="kpi-row" aria-labelledby="h-itog">
+    <h2 id="h-itog">Итог месяца <span class="hint">пять чисел, за которыми приходят</span></h2>
+    <div class="grid kpis" data-list="kpi"></div>
+  </section>
+
+  <section data-region="status" id="sec-status" aria-labelledby="h-status">
+    <h2 id="h-status">Сошёлся ли месяц <span class="hint">хватило ли выручки на обязательное</span></h2>
+    <article class="card status" id="status-card">
+      <p class="zag" id="status-zag" data-field="status-zag">—</p>
+      <dl id="status-dl"></dl>
+      <p class="note" data-field="status-note">—</p>
+      <p class="note" id="status-dey" data-field="status-dey" style="margin-top:var(--s3)">—</p>
+    </article>
+  </section>
+
+  <section data-region="plan-fakt" id="sec-plan" aria-labelledby="h-plan">
+    <h2 id="h-plan">План и факт <span class="hint">метка — план, полоса — факт</span></h2>
+    <article class="card">
+      <div data-block="chart" data-key="plan-shkaly"></div>
+      <p class="note" data-field="korrektirovka">—</p>
+    </article>
+  </section>
+
+  <section data-region="raspredelenie" aria-labelledby="h-split">
+    <h2 id="h-split">Куда ушла выручка <span class="hint" data-field="split-hint">—</span></h2>
+    <div class="grid halves">
+      <article class="card">
+        <div data-block="chart" data-key="split"></div>
+        <p class="note" data-field="split-note">—</p>
+      </article>
+      <article class="card">
+        <div data-block="chart" data-key="revenue-by-person"></div>
+      </article>
+    </div>
+  </section>
+
+  <section data-region="uchastniki" aria-labelledby="h-people">
+    <h2 id="h-people">Участники <span class="hint">выручка, на руки, прирост пая</span></h2>
+    <div class="grid people" data-list="people"></div>
+  </section>
+
+  <section data-region="dvizhenie" aria-labelledby="h-dvizh">
+    <h2 id="h-dvizh">Кто что получил <span class="hint">каждое поступление, сгруппировано по людям</span></h2>
+    <article class="card">
+      <div class="scroller" tabindex="0" role="region" aria-label="Поступления по людям, таблица">
+        <table data-block="table" data-key="dvizhenie">
+          <thead><tr>
+            <th scope="col">Дата</th><th scope="col">За что</th>
+            <th scope="col">От кого</th><th scope="col" class="num">Сумма</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="note" data-field="dvizh-note">—</p>
+    </article>
+  </section>
+
+  <section data-region="fondy" aria-labelledby="h-funds">
+    <h2 id="h-funds">Фонды <span class="hint">приход, расход, остаток на конец месяца</span></h2>
+    <article class="card">
+      <div class="scroller" tabindex="0" role="region" aria-label="Движение фондов, таблица">
+        <table data-block="table" data-key="funds">
+          <caption>Семь субсчетов накопления. Норматив — доля от выручки участника</caption>
+          <thead><tr>
+            <th scope="col">Фонд</th><th scope="col" class="num">Норматив</th>
+            <th scope="col" class="num">Вход</th>
+            <th scope="col" class="num">Приход</th><th scope="col" class="num">Расход</th>
+            <th scope="col" class="num">Остаток</th><th scope="col" class="num">Доход на капитал</th>
+          </tr></thead>
+          <tbody></tbody><tfoot></tfoot>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  <section data-region="zatraty" aria-labelledby="h-zat">
+    <h2 id="h-zat">Обязательные затраты <span class="hint" data-field="zat-hint">—</span></h2>
+    <article class="card">
+      <div class="scroller" tabindex="0" role="region" aria-label="Обязательные затраты, таблица">
+        <table data-block="table" data-key="zatraty">
+          <thead><tr><th scope="col">Статья</th><th scope="col" class="num">Сумма</th>
+            <th scope="col" class="num">Доля минимума</th></tr></thead>
+          <tbody></tbody><tfoot></tfoot>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  <section data-region="operacii" aria-labelledby="h-ops">
+    <h2 id="h-ops">Поступления <span class="hint">кто, за что и от кого</span></h2>
+    <article class="card">
+      <div class="scroller" tabindex="0" role="region" aria-label="Поступления за месяц, таблица">
+        <table data-block="table" data-key="ops">
+          <thead><tr>
+            <th scope="col">Дата</th><th scope="col">Получатель</th>
+            <th scope="col">За что</th><th scope="col">Источник</th>
+            <th scope="col" class="num">Сумма</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <details data-block="disclosure" data-key="ops-all">
+        <summary><span class="chev">›</span><span data-field="ops-more">—</span></summary>
+        <div class="scroller" role="region" aria-label="Остальные поступления, таблица">
+          <table data-block="table" data-key="ops-rest">
+            <thead><tr>
+              <th scope="col">Дата</th><th scope="col">Получатель</th>
+              <th scope="col">За что</th><th scope="col">Источник</th>
+              <th scope="col" class="num">Сумма</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </article>
+  </section>
+
+  <section data-region="sverka" aria-labelledby="h-check">
+    <h2 id="h-check">Сверка <span class="hint">куда разошёлся весь доход извне</span></h2>
+    <article class="card">
+      <div data-block="chart" data-key="sverka-polosa"></div>
+      <div class="scroller" tabindex="0" role="region" aria-label="Сверка месяца, таблица">
+        <table data-block="table" data-key="check">
+          <thead><tr><th scope="col">Строка</th><th scope="col" class="num">Сумма</th>
+            <th scope="col" class="num">Доля притока</th></tr></thead>
+          <tbody></tbody><tfoot></tfoot>
+        </table>
+      </div>
+      <p class="note" data-field="check-note">—</p>
+    </article>
+  </section>
+
+  <footer>
+    <p class="note" data-field="rules">—</p>
+    <p class="note" data-field="source">—</p>
+    <p class="note" data-field="stubs">—</p>
+  </footer>
+</main>
+
+<script>
+/* Отрисовка. Разметка выше данных не содержит: другой месяц — другой объект DATA.
+   Формы графиков взяты из каталога charts-html:
+     · доля от целого        → одна составная полоса (не пирог);
+     · величина по категориям → горизонтальные столбцы, отсортированные;
+     · показатель против цели → линейная шкала с меткой цели (каталог, строка 8).
+   Цвет — только слоты из DESIGN.md, слот закреплён за участником. */
+const money=n=>Number(n).toLocaleString("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=n=>(n*100).toLocaleString("ru-RU",{maximumFractionDigits:1})+" %";
+const el=(t,c,x)=>{const n=document.createElement(t);if(c)n.className=c;if(x!==undefined)n.textContent=x;return n};
+const set=(k,v)=>document.querySelectorAll('[data-field="'+k+'"]').forEach(e=>e.textContent=v);
+const slot=i=>getComputedStyle(document.documentElement).getPropertyValue("--c"+(((i-1)%4)+1)).trim();
+const tok=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const pokazat=(id,da)=>{const s=document.getElementById(id); if(s) s.style.display=da?"":"none"};
+
+function navigaciya(){
+  const box=document.querySelector('[data-region="nav"]'); if(!box) return;
+  if(!DATA.nav){ box.remove(); return; }
+  DATA.nav.forEach(([h,t])=>{const a=el("a",null,t); a.href=PRE+h;
+    if(h===DATA.nav_tek) a.setAttribute("aria-current","page"); box.append(a)});
+}
+
+function kpi(){
+  const d=DATA, box=document.querySelector('[data-list="kpi"]'); box.innerHTML="";
+  [["vneshniy","Доход извне",money(d.vneshniy_dohod)+" ₽","реальные деньги, пришедшие за месяц"],
+   ["norma","Норма накопления",pct(d.norma),"прожиточный минимум "+money(d.prozhitochnyy_minimum)+" ₽"],
+   ["na-ruki","На руки всем",money(d.lichnyy_dohod)+" ₽",pct(d.lichnyy_dohod/d.vneshniy_dohod)+" дохода извне"],
+   ["pai","Прирост паёв",money(d.prirost_paev)+" ₽",pct(d.prirost_paev/d.vneshniy_dohod)+" дохода, остаётся в семье"],
+   ["fondy","Остаток фондов",money(d.ostatok_fondov)+" ₽","переходит на следующий месяц"]
+  ].forEach(([k,l,v,b])=>{
+    const a=el("article","card kpi"); a.dataset.block="kpi"; a.dataset.key=k;
+    a.append(el("span","lbl",l));
+    const zn=el("span","val",v); zn.dataset.field="value"; a.append(zn);
+    const ba=el("span","base",b); ba.dataset.field="base"; a.append(ba);
+    box.append(a);
+  });
+}
+
+/* Каталог, строка 8: подложка + факт + метка цели. Цвет статусный, метка тёмная. */
+function shkalyPlanFakt(){
+  const p=DATA.plan; pokazat("sec-plan", !!p);
+  if(!p) return;
+  const host=document.querySelector('[data-key="plan-shkaly"]');
+  const stroki=[
+    {n:"Доход извне", plan:p.dohod_plan, fakt:p.dohod_fakt, bolshe_luchshe:true},
+    {n:"Обязательные затраты", plan:p.minimum_plan, fakt:p.minimum_fakt, bolshe_luchshe:false},
+    {n:"Отчислено в накопление", plan:p.nakoplenie_plan, fakt:p.nakoplenie_fakt, bolshe_luchshe:true}
+  ];
+  host.innerHTML="";
+  stroki.forEach(s=>{
+    const max=Math.max(s.plan,s.fakt,0)*1.15 || 1;
+    const otkl=s.fakt-s.plan;
+    const horosho = s.bolshe_luchshe ? otkl>=-0.005 : otkl<=0.005;
+    const cvet = Math.abs(otkl)<0.005 ? tok("--inset-fg") : (horosho?tok("--good"):tok("--crit"));
+    const row=el("div","shkala"); row.dataset.block="shkala"; row.dataset.key=s.n;
+    row.dataset.status = Math.abs(otkl)<0.005 ? "ровно" : (horosho?"хорошо":"хуже плана");
+    const podpis=el("div","shkala-podpis");
+    podpis.append(el("span",null,s.n),
+      el("span","shkala-znach", money(s.fakt)+" ₽  ·  план "+money(s.plan)));
+    const svg=`<svg viewBox="0 0 200 14" preserveAspectRatio="none"
+        style="display:block;width:100%;height:16px" role="img"
+        aria-label="${s.n}: факт ${money(s.fakt)}, план ${money(s.plan)}, отклонение ${money(otkl)}">
+      <rect x="0" y="3" width="200" height="8" rx="2" fill="${tok("--inset-bg")}"></rect>
+      <rect x="0" y="3" width="${Math.max(0,Math.min(200,s.fakt/max*200))}" height="8" rx="2" fill="${cvet}"></rect>
+      <line x1="${Math.max(0,Math.min(200,s.plan/max*200))}" y1="0"
+            x2="${Math.max(0,Math.min(200,s.plan/max*200))}" y2="14"
+            stroke="${tok("--page-fg")}" stroke-width="1.5"></line>
+    </svg>`;
+    row.append(podpis);
+    const holst=el("div"); holst.innerHTML=svg; row.append(holst);
+    const zn=el("div","shkala-otkl", (otkl>0?"+":"")+money(otkl)+" ₽ к плану");
+    zn.style.color=cvet; row.append(zn);
+    host.append(row);
+  });
+  const k=p.korrektirovka;
+  set("korrektirovka", Math.abs(k)<0.01
+    ? "План сошёлся с фактом — корректировка не нужна."
+    : (k>0 ? "Довнести на накопительный счёт "+money(k)+" ₽: доход выше плана, норма поднялась."
+           : "Вернуть в потребление "+money(-k)+" ₽: доход ниже планового, отложено больше нужного."));
+}
+
+function uchastniki(){
+  const box=document.querySelector('[data-list="people"]'); box.innerHTML="";
+  DATA.people.forEach((p,i)=>{
+    const a=el("article","card person"); a.dataset.block="person"; a.dataset.key=p.key||p.name;
+    const n=el("div","name");
+    const dot=el("span","dot"); dot.style.background=slot(p.slot||i+1); dot.setAttribute("aria-hidden","true");
+    n.append(dot, el("span",null,p.name), el("span","role",p.rebenok?"ребёнок":"взрослый"));
+    if(p.otdelno) n.append(el("span","badge","живёт отдельно"));
+    a.append(n);
+    const dl=el("dl");
+    const stroki=[["Выручка за месяц",money(p.vyruchka)+" ₽",false],
+                  ["На руки",money(p.na_ruki)+" ₽",true],
+                  ["Прирост пая",money(p.pay)+" ₽",false]];
+    if(p.pomoshch) stroki.push(["Помощь из фондов",money(p.pomoshch)+" ₽",false]);
+    if(p.nedobor)  stroki.push(["Не добрал минимум",money(p.nedobor)+" ₽",false]);
+    stroki.forEach(([k,v,big])=>{dl.append(el("dt",null,k));
+      const dd=el("dd",big?"big":null,v); dd.dataset.field=big?"na-ruki":"value"; dl.append(dd)});
+    a.append(dl);
+    /* Само по себе «на руки −75,15 ₽» читается как «принёс полторы тысячи и
+       остался должен». Причина — правило Р-4, и она должна стоять рядом. */
+    let prichina="";
+    if(p.na_ruki < -0.005)
+      prichina="Минус потому, что обязательные затраты семьи делятся между взрослыми, "+
+        "живущими вместе, а выручка участника в этом месяце меньше его доли.";
+    else if(p.rebenok && p.na_ruki > 0.005)
+      prichina="В плюсе потому, что дети не несут общих затрат: заработанное внутри "+
+        "семьи остаётся ребёнку целиком.";
+    else if(p.otdelno && p.na_ruki > 0.005)
+      prichina="В плюсе потому, что живёт отдельно и не платит за общий дом.";
+    if(prichina){ const pr=el("p","prichina",prichina); pr.dataset.field="prichina"; a.append(pr); }
+    box.append(a);
+  });
+}
+
+/* Доля от целого — одна составная полоса. Пирог каталогом запрещён при >3 секторах. */
+function polosaSplit(){
+  const host=document.querySelector('[data-key="split"]');
+  const nak=DATA.nakoplenie_vsego, potr=DATA.potreblenie_vsego, vsego=nak+potr||1;
+  host.innerHTML=`<svg viewBox="0 0 100 16" preserveAspectRatio="none"
+      style="display:block;width:100%;height:28px" role="img"
+      aria-label="Выручка ${money(vsego)} рублей: накопление ${pct(nak/vsego)}, потребление ${pct(potr/vsego)}">
+    <rect x="0" y="0" width="${nak/vsego*100}" height="16" fill="${slot(1)}" rx="2"></rect>
+    <rect x="${nak/vsego*100}" y="0" width="${potr/vsego*100}" height="16" fill="${slot(3)}" rx="2"></rect>
+  </svg>` +
+  '<div class="legend"><span><i class="sw" style="background:'+slot(1)+'"></i>накопление · семь субсчетов · '+
+  money(nak)+' ₽</span><span><i class="sw" style="background:'+slot(3)+'"></i>потребление · '+money(potr)+' ₽</span></div>';
+  set("split-hint","вся выручка "+money(DATA.vyruchka_vsego)+" ₽, включая внутренний оборот");
+  set("split-note","Из "+money(DATA.vyruchka_vsego)+" ₽ выручки "+money(DATA.vnutrenniy_oborot)+
+    " ₽ — внутренний оборот: семья платит сама себе за домашний труд. Богатство семьи это не увеличивает, "+
+    "но выручку участников — да.");
+}
+
+/* Величина по категориям — горизонтальные столбцы, отсортированные по значению. */
+function stolbcyVyruchki(){
+  const host=document.querySelector('[data-key="revenue-by-person"]');
+  const rows=[...DATA.people].sort((a,b)=>b.vyruchka-a.vyruchka);
+  const max=(rows[0] && rows[0].vyruchka>0)?rows[0].vyruchka:1, H=13, W=100;
+  let bars="";
+  rows.forEach((p,i)=>{
+    bars+=`<text x="0" y="${i*H+8}" font-size="4.2" fill="currentColor">${p.name}</text>`+
+          `<rect x="15" y="${i*H+2.5}" width="${p.vyruchka/max*62}" height="6.5" rx="1"
+                 fill="${slot(p.slot||i+1)}"></rect>`+
+          `<text x="${W}" y="${i*H+8}" font-size="4" text-anchor="end" fill="currentColor">${money(p.vyruchka)}</text>`;
+  });
+  host.innerHTML=`<h3 class="podzag">Выручка участников, ₽</h3>
+    <svg viewBox="0 0 ${W} ${rows.length*H}" style="display:block;width:100%;height:auto" role="img"
+      aria-label="Выручка участников: ${rows.map(p=>p.name+" "+money(p.vyruchka)).join(", ")}">${bars}</svg>
+    <p class="note" style="margin-bottom:0">Дети зарабатывают внутри семьи: уборка, урожай, оценки.
+      По модели это такая же выручка, как зарплата.</p>`;
+}
+
+/* Статус месяца. Раньше это был серый абзац в пятом блоке: самое важное
+   сообщение месяца читалось тем же кеглем, что и пояснение про паи. Теперь —
+   одна фраза, числа отдельными строками и что из этого следует. */
+function status(){
+  const d=DATA, def=d.deficit||{}, est=!!(def.deficit||def.dolg);
+  const karta=document.getElementById("status-card");
+  const zag=document.getElementById("status-zag");
+  const dl=document.getElementById("status-dl"); dl.innerHTML="";
+  karta.classList.remove("ur-crit","ur-warn","ur-good");
+  zag.classList.remove("crit","warn","good");
+  const stroka=(k,v,krupno)=>{dl.append(el("dt",null,k));
+    const dd=el("dd",krupno?"krupno":null,v); dd.dataset.field="value"; dl.append(dd)};
+
+  if(!est){
+    karta.classList.add("ur-good"); zag.classList.add("good");
+    zag.textContent="Месяц окупает обязательное";
+    stroka("Обязательные затраты", money(d.zatraty)+" ₽");
+    stroka("Отложено в накопление", money(d.nakoplenie_vsego)+" ₽", true);
+    stroka("Осталось семье на руки", money(d.lichnyy_dohod)+" ₽");
+    set("status-note","Выручки хватило на всё обязательное, фонды не вскрывались, "+
+      "заёмов нет. Накопленное остаётся в паях участников.");
+    set("status-dey","");
+    document.getElementById("status-dey").style.display="none";
+    return;
+  }
+  document.getElementById("status-dey").style.display="";
+  const kriticheski = (def.nepokryto||0) > 0.005;
+  karta.classList.add(kriticheski?"ur-crit":"ur-warn");
+  zag.classList.add(kriticheski?"crit":"warn");
+  zag.textContent = kriticheski
+    ? "Месяц не окупает обязательное: не хватает "+money(def.nepokryto)+" ₽"
+    : "Не хватило на обязательное, но фонды закрыли дыру";
+
+  stroka("Не хватило на обязательное", money(def.deficit)+" ₽");
+  if(kriticheski) stroka("Не покрыто ничем", money(def.nepokryto)+" ₽", true);
+  const pokryto=(def.deficit||0)-(def.nepokryto||0);
+  if(pokryto>0.005) stroka("Закрыто страховым и резервным фондами", money(pokryto)+" ₽");
+  if(def.dolg) stroka("Долг резервному фонду (заём)", money(def.dolg)+" ₽");
+  stroka("Месяц подряд с нехваткой", def.mes_deficita+"-й из "+(d.predel_deficita||3));
+
+  set("status-note","Заём из резервного фонда гасится сам из накопления первых же "+
+    "хороших месяцев — делать для этого ничего не нужно. Имущественные паи на "+
+    "покрытие не трогаются: накопленное не проедается.");
+  set("status-dey", kriticheski
+    ? "Что это значит: "+money(def.nepokryto)+" ₽ обязательных трат в этом месяце "+
+      "не закрыты ничем. На "+((d.predel_deficita||3)+1)+"-м таком месяце подряд расчёт "+
+      "останавливается — либо поднимать доход, либо снижать обязательное в разделе «План»."
+    : "Дыра закрыта фондами, запас на следующий месяц уменьшился на эту сумму.");
+}
+
+function fondy(){
+  const t=document.querySelector('[data-key="funds"]');
+  const tb=t.querySelector("tbody"), tf=t.querySelector("tfoot");
+  tb.innerHTML=""; tf.innerHTML="";
+  let sv=0,sp=0,sr=0,so=0,sd=0;
+  /* Колонка дохода на капитал была целиком из прочерков: капитал ещё не
+     размещён. Пустая колонка — не информация, а шум; показываем, когда есть. */
+  const estDohod = DATA.fondy.some(f=>(f.dohod||0)>0.005);
+  const shapkaDoh = t.querySelector('thead th:last-child');
+  if(shapkaDoh) shapkaDoh.style.display = estDohod ? "" : "none";
+  const podpis = t.querySelector("caption");
+  if(podpis) podpis.textContent = "Семь субсчетов накопления. Норматив — доля от выручки участника"+
+    (estDohod ? "" : ". Дохода на капитал пока нет: фонды не размещены");
+  DATA.fondy.forEach(f=>{
+    // Вход — остаток, перешедший с прошлого месяца. Без него столбцы не
+    // складываются в остаток, и таблица не сходится сама с собой на глазах.
+    sv+=f.vhod||0; sp+=f.prihod; sr+=f.rashod; so+=f.ostatok; sd+=f.dohod||0;
+    const tr=el("tr"); tr.dataset.block="fund-row"; tr.dataset.key=f.key;
+    const th=el("th",null,f.name); th.scope="row"; tr.append(th);
+    tr.append(el("td","num",pct(f.norm)),el("td","num",money(f.vhod||0)),
+              el("td","num",money(f.prihod)),el("td","num",money(f.rashod)));
+    const ost=el("td","num"); ost.append(el("span",f.ostatok>0.005?"good":"muted",money(f.ostatok)));
+    tr.append(ost);
+    if(estDohod){ tr.append(el("td","num", f.dohod?money(f.dohod):"—")); }
+    if(f.stub){ th.append(document.createTextNode(" ")); th.append(el("span","badge warn","заглушка"));
+                tr.dataset.status="stub"; }
+    tb.append(tr);
+  });
+  const tr=el("tr");
+  tr.append(el("td",null,"Итого"),el("td","num",pct(DATA.norma)),el("td","num",money(sv)),
+            el("td","num",money(sp)),el("td","num",money(sr)),el("td","num",money(so)));
+  if(estDohod) tr.append(el("td","num",money(sd)));
+  tf.append(tr);
+}
+
+function zatraty(){
+  const t=document.querySelector('[data-key="zatraty"]');
+  const tb=t.querySelector("tbody"), tf=t.querySelector("tfoot");
+  tb.innerHTML=""; tf.innerHTML="";
+  const vsego=DATA.zatraty_stroki.reduce((a,z)=>a+z.sum,0)||1;
+  DATA.zatraty_stroki.forEach(z=>{
+    const tr=el("tr"); const th=el("th",null,z.name); th.scope="row";
+    tr.append(th, el("td","num",money(z.sum)), el("td","num",pct(z.sum/vsego))); tb.append(tr);
+  });
+  const tr=el("tr");
+  tr.append(el("td",null,"Итого"),el("td","num",money(vsego)),el("td","num","100 %")); tf.append(tr);
+  set("zat-hint","из них складывается прожиточный минимум месяца");
+}
+
+function operacii(){
+  const fill=(tbl,list)=>{
+    const tb=tbl.querySelector("tbody"); tb.innerHTML="";
+    list.forEach(o=>{
+      const tr=el("tr"); tr.dataset.block="op-row";
+      tr.append(el("td",null,o.date),el("td",null,o.to||"—"),el("td",null,o.what||"—"));
+      const src=el("td");
+      src.append(el("span","badge",o.vneshniy?"извне":"внутри"));
+      src.append(document.createTextNode(" "+(o.from||"")));
+      tr.append(src, el("td","num",money(o.sum)));
+      tb.append(tr);
+    });
+  };
+  const first=DATA.ops.slice(0,4), rest=DATA.ops.slice(4);
+  fill(document.querySelector('[data-key="ops"]'), first);
+  fill(document.querySelector('[data-key="ops-rest"]'), rest);
+  set("ops-more","Показать остальные поступления: "+rest.length);
+  document.querySelector('[data-key="ops-all"]').style.display = rest.length?"":"none";
+}
+
+function sverka(){
+  const d=DATA;
+  // Складываем только МЕСЯЧНЫЕ величины. Остаток фондов накопленный: пока
+  // месяцы не сцеплялись, он совпадал с месячным изменением, а после сцепления
+  // сверка показывала разрыв в тысячи рублей там, где всё сходится.
+  const dFond = (d.izmenenie_fondov!=null) ? d.izmenenie_fondov : d.ostatok_fondov;
+  const stroki=[["На руки участникам",d.lichnyy_dohod,1],
+                ["Прирост имущественных паёв",d.prirost_paev,2],
+                ["Материальные затраты",d.zatraty,3],
+                ["Изменение остатка фондов",dFond,4]];
+  if((d.naruzhu||0)>0.005) stroki.push(["Ушло наружу",d.naruzhu,1]);
+  const sum=stroki.reduce((a,s)=>a+s[1],0)||1, baza=d.vneshniy_dohod||1;
+  const host=document.querySelector('[data-key="sverka-polosa"]');
+  let x=0, segs="", leg="";
+  stroki.forEach(([n,v,sl])=>{
+    const w=Math.max(0,v/sum*100);
+    segs+=`<rect x="${x}" y="0" width="${w}" height="16" fill="${slot(sl)}" rx="1"></rect>`; x+=w;
+    leg+='<span><i class="sw" style="background:'+slot(sl)+'"></i>'+n+' · '+money(v)+' ₽</span>';
+  });
+  host.innerHTML=`<svg viewBox="0 0 100 16" preserveAspectRatio="none"
+      style="display:block;width:100%;height:28px" role="img"
+      aria-label="Доход извне ${money(d.vneshniy_dohod)} разошёлся: ${stroki.map(s=>s[0]+" "+money(s[1])).join(", ")}">
+      ${segs}</svg><div class="legend">${leg}</div>`;
+  const tb=document.querySelector('[data-key="check"] tbody'),
+        tf=document.querySelector('[data-key="check"] tfoot');
+  tb.innerHTML=""; tf.innerHTML="";
+  stroki.forEach(([n,v])=>{const tr=el("tr"); const th=el("th",null,n); th.scope="row";
+    tr.append(th, el("td","num",money(v)), el("td","num",pct(v/baza))); tb.append(tr)});
+  const tr=el("tr");
+  tr.append(el("td",null,"Разошлось всего"),el("td","num",money(sum)),el("td","num",pct(sum/baza)));
+  tf.append(tr);
+  const raz=d.vneshniy_dohod-sum;
+  set("check-note","Доход извне "+money(d.vneshniy_dohod)+" ₽, разошлось "+money(sum)+
+    " ₽. Расхождение "+money(Math.abs(raz))+" ₽ — "+
+    (Math.abs(raz)<0.05?"округление долей до копейки, сходится.":"проверить."));
+}
+
+
+/* Движение по людям. Общая таблица поступлений отвечает на «что было»,
+   а этот блок — на «кто за что получил»: в общем списке человек теряется. */
+/* Кто что получил. Было: пять карточек по 300 px, в каждой таблица на четыре
+   колонки — столбец «Сумма» обрезался и уезжал в боковую прокрутку, то есть
+   главное число блока не читалось. Стало: одна таблица, человек — строка-группа
+   с итогом, поступления под ним. */
+function dvizhenie(){
+  const t=document.querySelector('[data-key="dvizhenie"]'); if(!t) return;
+  const tb=t.querySelector("tbody"); tb.innerHTML="";
+  const ops=DATA.ops||[];
+  const bez=[];
+  DATA.people.forEach((p,i)=>{
+    const svoi=ops.filter(o=>o.to===p.name);
+    if(!svoi.length){ bez.push(p.name); return; }
+    const izvne=svoi.filter(o=>o.vneshniy).reduce((a,o)=>a+o.sum,0);
+    const vnutri=svoi.filter(o=>!o.vneshniy).reduce((a,o)=>a+o.sum,0);
+    const gr=el("tr","grp"); gr.dataset.block="dvizh"; gr.dataset.key=p.key||p.name;
+    const th=el("th"); th.scope="rowgroup"; th.colSpan=4;
+    const dot=el("span","dot"); dot.style.background=slot(p.slot||i+1); dot.setAttribute("aria-hidden","true");
+    const razbivka = (izvne>0.005 && vnutri>0.005)
+      ? p.name+" · извне "+money(izvne)+" ₽ · внутри семьи "+money(vnutri)+" ₽"
+      : p.name+(izvne>0.005 ? " · извне семьи" : " · внутри семьи");
+    th.append(dot, document.createTextNode(razbivka));
+    const it=el("span","sum",money(izvne+vnutri)+" ₽"); th.append(it);
+    gr.append(th); tb.append(gr);
+    svoi.forEach(o=>{const tr=el("tr");
+      tr.append(el("td",null,o.date),el("td",null,o.what),
+                el("td",null,o.vneshniy?"извне семьи":(o.from||"—")),
+                el("td","num",money(o.sum)));
+      tb.append(tr)});
+  });
+  set("dvizh-note", bez.length
+    ? "Поступлений за месяц не было у: "+bez.join(", ")+"."
+    : "У всех участников были поступления.");
+}
+
+function narisovat(){
+  set("period",DATA.period); set("rules",DATA.rules);
+  set("source",DATA.source||""); set("stubs",DATA.stubs||"");
+  navigaciya(); kpi(); status(); shkalyPlanFakt(); polosaSplit(); stolbcyVyruchki();
+  uchastniki(); dvizhenie(); fondy(); zatraty(); operacii(); sverka();
+}
+
+/* ДАННЫЕ кабинета. Тот же объект DATA, что в мастерской, только собирается из
+   /api/mesyac. Разметка и отрисовка выше не тронуты — за это и держим общий
+   исходник /root/dizain/chartaev-uchet/sborka/mesyac-sborka.py. */
+let DATA = {};
+const q = id => document.getElementById(id);
+
+async function otkryt(gm){
+  const d = await (await fetch(PRE+"/api/mesyac?mesyac=" + gm)).json();
+  const pusto = q("pusto");
+  if(!d.ok){
+    document.querySelectorAll("main section:not(#pusto)").forEach(x => x.style.display = "none");
+    pusto.style.display = "";
+    const netSostava = (d.err || "").indexOf("состав") >= 0;
+    q("pusto-zag").textContent = d.ostanovka ? "Расчёт остановлен"
+      : netSostava ? "Сначала заведите состав семьи" : "За этот месяц записей ещё нет";
+    q("pusto-text").textContent = d.ostanovka ? d.err
+      : netSostava ? "Кабинет считает по участникам: укажите, кто в семье, сколько лет и кем приходится."
+      : "Отчёт собирается из записанных операций. Начните с зарплаты или траты — числа появятся сразу.";
+    const k = q("pusto-knopka");
+    k.href = PRE + (netSostava ? "/sostav" : "/vvod");
+    k.textContent = netSostava ? "Завести состав семьи" : "Записать операцию";
+    k.style.display = d.ostanovka ? "none" : "";
+    return;
+  }
+  pusto.style.display = "none";
+  document.querySelectorAll("main section:not(#pusto)").forEach(x => x.style.display = "");
+  DATA = {
+    period: gm, rules: d.rules,
+    nav: NAV, nav_tek: "/mesyac",
+    prozhitochnyy_minimum: d.prozhitochnyy_minimum, norma: d.norma,
+    vneshniy_dohod: d.vneshniy_dohod, vyruchka_vsego: d.vyruchka_vsego,
+    vnutrenniy_oborot: d.vnutrenniy_oborot,
+    nakoplenie_vsego: d.nakoplenie_vsego, potreblenie_vsego: d.potreblenie_vsego,
+    lichnyy_dohod: d.lichnyy_dohod, prirost_paev: d.prirost_paev,
+    ostatok_fondov: d.ostatok_fondov, zatraty: d.zatraty,
+    people: d.people, fondy: d.fondy_polnye, zatraty_stroki: d.zatraty_stroki, ops: d.ops,
+    plan: (d.plan && d.plan.est) ? d.plan : null,
+    deficit: d.deficit_blok,
+    neizvestnye: d.neizvestnye || {},
+    source: "Числа считает ядро yadro/raschet.py из журнала операций при каждом открытии. В базе лежат только факты — правила можно менять, накопленное не портится.",
+    stubs: ""
+  };
+  narisovat();
+}
+
+const NAV = [["/", "Сегодня"], ["/vvod", "Записать"], ["/plan", "План"], ["/mesyac", "Месяц"], ["/chto-esli", "Что если"], ["/scheta", "Счета"], ["/sostav", "Состав"]];
+
+(async () => {
+  const mm = await (await fetch(PRE+"/api/mesyacy")).json();
+  const sel = q("mes"); sel.innerHTML = "";
+  mm.mesyacy.forEach(m => { const o = document.createElement("option");
+    o.value = o.textContent = m; sel.append(o); });
+  sel.onchange = () => otkryt(sel.value);
+  otkryt(sel.value);
+})();
+</script>
+</body>
+</html>

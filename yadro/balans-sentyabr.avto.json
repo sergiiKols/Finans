@@ -1,0 +1,31 @@
+{
+ "_": "собран автоматически: python3 perenos.py <месяц.json>. Руками не править.",
+ "imushchestvennye_pai": {
+  "папа": 800.0728727999999,
+  "мама": 213.60177650785246,
+  "дочь": 48.47253507920957,
+  "сын": 38.90746588793109
+ },
+ "fondy_ostatki": {
+  "investicii": 0.0,
+  "zemelnye_pai": 0.0,
+  "upravlenie": 275.26366256874826,
+  "zdravoohranenie": 207.29740256553376,
+  "obrazovanie": 8.137989069257129,
+  "rezerv": 275.26366256874826,
+  "strahovoy": 275.26366256874826
+ },
+ "karmany_ostatki": {
+  "одежда и обувь детям": 100.0
+ },
+ "dolg_rezervu": 0.0,
+ "mesyacev_deficita_podryad": 0,
+ "_svodka": {
+  "vsego": 2242.2810296160287,
+  "pai": 1101.054650274993,
+  "fondy": 1041.2263793410357,
+  "karmany": 100.0,
+  "uchastnikov": 4,
+  "fondov": 7
+ }
+}

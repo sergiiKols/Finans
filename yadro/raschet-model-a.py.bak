@@ -1,0 +1,224 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Расчётное ядро семейного учёта по системе Чартаева — черновик от 16.08.2026.
+
+Считает один месяц по правилам из parametry.json. Правила здесь не зашиты:
+программа умеет только «разделить выручку участника и разнести по субсчетам»,
+а какие доли и куда — берётся из файла.
+
+Принятые решения (16.08.2026, владелец):
+  * это ВНУТРЕННИЙ семейный учёт, не юридическое лицо;
+  * зарплата — ВЫРУЧКА УЧАСТНИКА, то есть делится по общей формуле, как любая
+    другая выручка.
+
+Запуск:  python3 raschet.py [parametry.json] [mesyac.json] [--sravnit]
+"""
+import json, sys, os
+from collections import defaultdict
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def zagruzit(par_path, mes_path):
+    par = json.load(open(par_path, encoding="utf-8"))
+    mes = json.load(open(mes_path, encoding="utf-8"))
+    s = sum(par["nakoplenie"].values())
+    polnaya = par["norma_nakopleniya"]["polnaya_norma"]
+    if abs(s - polnaya) > 1e-9:
+        raise SystemExit(f"нормативы накопления дают {s:.4f}, а полная норма "
+                         f"{polnaya:.4f} — расчёт остановлен")
+    return par, mes
+
+
+def norma_po_dohodu(par, vneshniy_dohod):
+    """Норма накопления пляшет от дохода: при `polnaya_pri_dohode` и выше — полная,
+    при `nol_pri_dohode` (обязательные затраты) не копим вовсе, между — линейно.
+
+    Смысл: копить имеет смысл с того, что осталось сверх прожиточного минимума,
+    а не с денег, которых не хватает на еду."""
+    n = par["norma_nakopleniya"]
+    verh, niz, polnaya = n["polnaya_pri_dohode"], n["nol_pri_dohode"], n["polnaya_norma"]
+    if vneshniy_dohod >= verh:
+        return polnaya
+    if vneshniy_dohod <= niz:
+        return 0.0
+    return polnaya * (vneshniy_dohod - niz) / (verh - niz)
+
+
+class Uchet:
+    """Журнал: у каждого участника личные счета, у семьи — фонды."""
+
+    def __init__(self, par, uchastniki, norma=None):
+        self.par = par
+        polnaya = par["norma_nakopleniya"]["polnaya_norma"]
+        self.norma = polnaya if norma is None else norma
+        k = 0.0 if polnaya == 0 else self.norma / polnaya
+        self.nak_doli = {f: d * k for f, d in par["nakoplenie"].items()}
+        self.fondy = defaultdict(float)              # накопительные фонды семьи
+        self.vyruchka = defaultdict(float)           # выручка участника за месяц
+        self.potreblenie = defaultdict(float)        # его доля потребления
+        self.imushch_pai = defaultdict(float)        # имущественный пай (капитализация)
+        self.dividendy = defaultdict(float)          # доход по земельным паям
+        self.upravlenie = defaultdict(float)         # доход организатора
+        self.zatraty = defaultdict(float)            # материальные затраты участника
+        self.uchastniki = list(uchastniki)
+        self.vneshniy_pritok = 0.0                   # реальные деньги извне
+        self.vneshniy_rashod = 0.0                   # реальные деньги наружу
+        self.vnutrenniy_oborot = 0.0                 # перекладывание внутри семьи
+        self.zhurnal = []
+
+    # --- главная операция: пришла выручка участнику ---
+    def vyruchka_uchastnika(self, kto, summa, istochnik):
+        self.vyruchka[kto] += summa
+        nak = summa * self.norma
+        self.potreblenie[kto] += summa - nak
+        for fond, dolya in self.nak_doli.items():
+            self.fondy[fond] += summa * dolya
+        self.zhurnal.append((istochnik, kto, summa, nak, summa - nak))
+
+    def pokupka_u_uchastnika(self, pokupatel, prodavec, summa, chto):
+        """Один участник покупает результат у другого — из своего потребления."""
+        self.potreblenie[pokupatel] -= summa
+        self.vnutrenniy_oborot += summa
+        self.vyruchka_uchastnika(prodavec, summa, f"внутри: {chto}")
+
+    def rashod_fonda(self, fond, summa, komu, chto):
+        if self.fondy[fond] < summa - 1e-9:
+            print(f"  ! фонд «{fond}» ушёл в минус на покупке «{chto}»: "
+                  f"было {self.fondy[fond]:.2f}, требуется {summa:.2f}")
+        self.fondy[fond] -= summa
+        self.vnutrenniy_oborot += summa
+        self.vyruchka_uchastnika(komu, summa, f"внутри: {chto}")
+
+
+def schitat(par, mes, kommunalka_v_nakoplenii=None):
+    if kommunalka_v_nakoplenii is None:
+        kommunalka_v_nakoplenii = par.get("kommunalka_v_nakoplenii", False)
+    vnesh = sum(mes.get("vneshnyaya_vyruchka", {}).values())
+    u = Uchet(par, mes["uchastniki"], norma_po_dohodu(par, vnesh))
+
+    # 1. Внешняя выручка (по принятому решению — зарплата тоже выручка).
+    for kto, summa in mes.get("vneshnyaya_vyruchka", {}).items():
+        u.vneshniy_pritok += summa
+        u.vyruchka_uchastnika(kto, summa, "зарплата")
+
+    # 2. Внутренние покупки: фонд покупает результат у участника.
+    #    Это снова выручка — она опять делится по формуле (см. вывод про оборот).
+    for op in mes.get("vnutrennie_pokupki", []):
+        if op.get("ot_uchastnika"):
+            u.pokupka_u_uchastnika(op["ot_uchastnika"], op["komu"], op["summa"], op["chto"])
+        else:
+            u.rashod_fonda(op["iz_fonda"], op["summa"], op["komu"], op["chto"])
+
+    # 3. Дивиденды по земельным паям — поровну всем по праву членства.
+    zem = u.fondy["zemelnye_pai"]
+    if zem:
+        dolya = zem / len(u.uchastniki)
+        for kto in u.uchastniki:
+            u.dividendy[kto] += dolya
+        u.fondy["zemelnye_pai"] = 0.0
+
+    # 4. Доля управления — организатору быта.
+    org = par.get("poluchatel_upravleniya")
+    if org and u.fondy["upravlenie"]:
+        u.upravlenie[org] += u.fondy["upravlenie"]
+        u.fondy["upravlenie"] = 0.0
+
+    # 5. Инвестиции капитализируются в имущественные паи — пропорционально
+    #    выручке участника (кто внёс, тому и пай).
+    inv = u.fondy["investicii"]
+    vsego_vyr = sum(u.vyruchka.values()) or 1.0
+    for kto, v in u.vyruchka.items():
+        u.imushch_pai[kto] += inv * v / vsego_vyr
+    u.fondy["investicii"] = 0.0
+
+    # 6. Материальные затраты.
+    obshch = dict(mes.get("obshchie_zatraty", {}))
+    komm = obshch.pop("коммунальные", 0.0)
+    if kommunalka_v_nakoplenii:
+        u.fondy["rezerv"] -= komm          # платит семья из накопления
+        u.vneshniy_rashod += komm          # деньги всё равно ушли наружу
+    else:
+        obshch["коммунальные"] = komm      # это материальные затраты участников
+    for kto, summa in mes.get("lichnye_zatraty", {}).items():
+        u.zatraty[kto] += summa
+    obshchaya_summa = sum(obshch.values())
+    if obshchaya_summa:
+        pravilo = par.get("obshchie_zatraty_delyatsya")
+        deti = set(mes.get("deti", []))
+        if pravilo == "porovnu":
+            platyat = list(u.uchastniki)
+        elif pravilo == "porovnu_krome_detey":
+            platyat = [k for k in u.uchastniki if k not in deti]
+        elif pravilo == "po_dole_vyruchki_krome_detey":
+            platyat = "dolya_vzroslye"
+        else:
+            platyat = None                  # по доле выручки среди всех
+        if platyat == "dolya_vzroslye":
+            vzr = [k for k in u.uchastniki if k not in deti]
+            baza = sum(u.vyruchka[k] for k in vzr) or 1.0
+            for kto in vzr:
+                u.zatraty[kto] += obshchaya_summa * u.vyruchka[kto] / baza
+        elif platyat is not None:
+            if not platyat:
+                raise SystemExit("некому платить общие затраты: все в детях")
+            d = obshchaya_summa / len(platyat)
+            for kto in platyat:
+                u.zatraty[kto] += d
+        else:
+            for kto, v in u.vyruchka.items():
+                u.zatraty[kto] += obshchaya_summa * v / vsego_vyr
+    return u
+
+
+def pechat(u, zagolovok):
+    par = u.par
+    val = par.get("valyuta", "")
+    print("\n" + "=" * 78)
+    print(zagolovok)
+    print(f"внешний доход семьи {u.vneshniy_pritok:.0f} → норма накопления "
+          f"{u.norma*100:.1f} % (потребление {(1-u.norma)*100:.1f} %)")
+    print("=" * 78)
+    print(f"{'участник':<8}{'выручка':>10}{'потребл.':>10}{'матзатр.':>10}"
+          f"{'дивид.':>9}{'управл.':>9}{'ЛИЧНЫЙ':>10}{'имущ.пай':>10}")
+    itog = defaultdict(float)
+    for kto in u.uchastniki:
+        lich = u.potreblenie[kto] - u.zatraty[kto] + u.dividendy[kto] + u.upravlenie[kto]
+        print(f"{kto:<8}{u.vyruchka[kto]:>10.2f}{u.potreblenie[kto]:>10.2f}"
+              f"{u.zatraty[kto]:>10.2f}{u.dividendy[kto]:>9.2f}{u.upravlenie[kto]:>9.2f}"
+              f"{lich:>10.2f}{u.imushch_pai[kto]:>10.2f}")
+        itog["vyr"] += u.vyruchka[kto]; itog["lich"] += lich; itog["pai"] += u.imushch_pai[kto]
+    print("-" * 78)
+    print(f"{'итого':<8}{itog['vyr']:>10.2f}{'':>10}{'':>10}{'':>9}{'':>9}"
+          f"{itog['lich']:>10.2f}{itog['pai']:>10.2f}")
+
+    print(f"\nОстатки фондов, {val}")
+    for f, v in u.fondy.items():
+        if abs(v) > 1e-9:
+            print(f"  {f:<18}{v:>10.2f}" + ("   ← минус!" if v < -1e-9 else ""))
+
+    print(f"\nДеньги: извне пришло {u.vneshniy_pritok:.2f}, "
+          f"внутреннего оборота {u.vnutrenniy_oborot:.2f}, "
+          f"суммарная «выручка семьи» {itog['vyr']:.2f}"
+          f"  ← оборот раздувает «доход семьи» на {itog['vyr'] - u.vneshniy_pritok:.2f}")
+    svod = (itog['lich'] + itog['pai'] + sum(u.fondy.values())
+            + sum(u.zatraty.values()) + u.vneshniy_rashod)
+    print(f"Сходимость: личные {itog['lich']:.2f} + паи {itog['pai']:.2f} "
+          f"+ фонды {sum(u.fondy.values()):.2f} + затраты {sum(u.zatraty.values()):.2f} "
+          f"+ наружу {u.vneshniy_rashod:.2f} = {svod:.2f}"
+          f"  (должно быть {u.vneshniy_pritok:.2f})"
+          + ("  ✓" if abs(svod - u.vneshniy_pritok) < 1e-6 else "  ✗ РАСХОЖДЕНИЕ"))
+
+
+if __name__ == "__main__":
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    par_p = args[0] if args else os.path.join(HERE, "parametry.json")
+    mes_p = args[1] if len(args) > 1 else os.path.join(HERE, "mesyac.json")
+    sravnit = "--sravnit" in sys.argv
+    if sravnit:
+        sys.argv.remove("--sravnit")
+    par, mes = zagruzit(par_p, mes_p)
+    pechat(schitat(par, mes), "РАСЧЁТ МЕСЯЦА")
+    if sravnit:                      # отклонённый вариант — только по прямой просьбе
+        pechat(schitat(par, mes, True),
+               "ДЛЯ СРАВНЕНИЯ — коммуналка из фонда накопления (отклонено 16.08.2026)")

@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Первый запуск — состав семьи</title>
+<style>
+/* Токены — из DESIGN.md проекта. Менять оба места вместе. */
+:root{
+  --page-bg:#faf9f7; --page-fg:#2b3038;
+  --card-bg:#ffffff; --card-fg:#2b3038;
+  --inset-bg:#f2f0ed; --inset-fg:#4e5560;
+  --head-bg:#333944; --head-fg:#f7f6f4;
+  --accent-bg:#1f63c9; --accent-fg:#ffffff;
+  --good:#0c7350; --warn:#7a5c00; --crit:#c33c2c;
+  --border:#e3e0dc; --ring:#1f63c9;
+  --c1:#2a6fd6; --c2:#d9682c; --c3:#12967a; --c4:#c98f16;
+  --r-card:12px; --r-ctl:8px; --r-tag:4px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s6:24px; --s8:32px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --page-bg:#1b1e23; --page-fg:#eceae7;
+    --card-bg:#23272e; --card-fg:#eceae7;
+    --inset-bg:#2a2f36; --inset-fg:#a8aeb8;
+    --head-bg:#0f1216; --head-fg:#f2f0ed;
+    --accent-bg:#5c9bf0; --accent-fg:#10141a;
+    --good:#39b483; --warn:#d3a13a; --crit:#e8705f;
+    --border:#343a42; --ring:#5c9bf0;
+    --c1:#5c9bf0; --c2:#e58b52; --c3:#3fb79a; --c4:#d9ab3f;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page-bg);color:var(--page-fg);
+  font:400 14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-variant-numeric:tabular-nums}
+.wrap{max-width:1200px;margin:0 auto;padding:0 var(--s4)}
+@media (min-width:768px){.wrap{padding:0 var(--s6)}}
+
+.top{position:sticky;top:0;z-index:5;background:var(--head-bg);color:var(--head-fg);
+     border-bottom:1px solid var(--border)}
+.top .wrap{display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;
+           padding-top:var(--s3);padding-bottom:var(--s3)}
+h1{font-size:20px;line-height:1.25;font-weight:600;margin:0}
+.step{font-size:12px;font-weight:500;opacity:.75}
+.spacer{flex:1 1 auto}
+
+.btn{min-height:44px;padding:0 var(--s4);border-radius:var(--r-ctl);
+     font:600 14px/1 system-ui,sans-serif;cursor:pointer;border:1px solid transparent;
+     background:transparent;color:inherit}
+.btn-main{background:var(--accent-bg);color:var(--accent-fg)}
+.btn-main:hover{filter:brightness(1.08)}
+.btn-main:active{filter:brightness(.92)}
+.btn-line{border-color:var(--border);color:var(--page-fg)}
+.btn-line:hover{background:var(--inset-bg)}
+.btn-sm{min-height:44px;padding:0 var(--s3);font-size:13px}
+:where(a,button,summary,input,select,[tabindex]):focus-visible,.scroller:focus{
+  outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--r-tag)}
+
+main{padding-bottom:var(--s8)}
+.grid.cols{padding-bottom:72px}
+section{margin-top:var(--s6)}
+h2{font-size:15px;line-height:1.3;font-weight:600;margin:0 0 var(--s3)}
+h2 .hint{font-weight:400;font-size:14px;color:var(--inset-fg);margin-left:var(--s2)}
+h3{font-size:14px;font-weight:600;margin:0}
+.card{background:var(--card-bg);color:var(--card-fg);border:1px solid var(--border);
+      border-radius:var(--r-card);padding:var(--s4);min-width:0}
+.grid{display:grid;gap:var(--s3)}
+.cols{grid-template-columns:1fr}
+@media (min-width:1024px){.cols{grid-template-columns:2fr 1fr;align-items:start}}
+.people{gap:var(--s3)}
+
+/* --- участник --- */
+.person{display:grid;gap:var(--s3)}
+.person .hdr{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.person .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.fields{display:grid;gap:var(--s3);grid-template-columns:1fr}
+@media (min-width:560px){.fields{grid-template-columns:1.4fr .6fr 1fr}}
+label{display:block;font-size:12px;font-weight:500;color:var(--inset-fg);margin-bottom:var(--s1)}
+input,select{width:100%;min-height:44px;padding:0 var(--s3);border:1px solid var(--border);
+  border-radius:var(--r-ctl);background:var(--card-bg);color:var(--card-fg);
+  font:400 14px/1 system-ui,sans-serif;font-variant-numeric:tabular-nums}
+input:hover,select:hover{border-color:var(--inset-fg)}
+fieldset{border:0;padding:0;margin:0;min-width:0}
+legend{font-size:12px;font-weight:500;color:var(--inset-fg);padding:0;margin-bottom:var(--s1)}
+.chips{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.chip{min-height:44px;display:inline-flex;align-items:center;gap:var(--s2);
+      padding:0 var(--s3);border:1px solid var(--border);border-radius:var(--r-ctl);
+      background:var(--card-bg);color:var(--card-fg);font-size:13px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--inset-bg);border-color:var(--inset-fg);font-weight:600}
+.chip .mark{font-weight:700}
+.row-actions{display:flex;gap:var(--s2);flex-wrap:wrap}
+.derived{font-size:14px;color:var(--inset-fg)}
+.derived b{color:var(--page-fg);font-weight:600}
+.badge{display:inline-block;font-size:12px;padding:1px 6px;border-radius:var(--r-tag);
+       background:var(--inset-bg);color:var(--inset-fg)}
+.badge.away{color:var(--warn);font-weight:600}
+.good{color:var(--good)} .warn{color:var(--warn)} .crit{color:var(--crit)}
+.note{font-size:14px;color:var(--inset-fg);line-height:1.5;max-width:68ch}
+ul.plain{margin:var(--s2) 0 0;padding-left:18px}
+ul.plain li{margin:var(--s1) 0}
+.summary dl{display:grid;grid-template-columns:1fr auto;gap:var(--s2);margin:0}
+.summary dt{font-size:14px;color:var(--inset-fg)}
+.summary dd{margin:0;text-align:right;font-weight:600}
+.sticky-save{position:sticky;bottom:0;background:var(--page-bg);
+  border-top:1px solid var(--border);padding:var(--s3) 0;margin-top:var(--s6);
+  display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap}
+footer{margin-top:var(--s6);padding-top:var(--s4);border-top:1px solid var(--border)}
+</style>
+
+<style>
+/* Общая навигация на всех экранах: до 17.08.2026 её не было, и ввод терялся —
+   человек видел отчёт и не понимал, куда нажать, чтобы записать. */
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+/* Текущий раздел отмечается подчёркиванием, а не подложкой: полупрозрачный
+   фон на тёмной шапке съедает контраст — аудит показал 1.08:1 вместо 4.5. */
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;
+  color:var(--head-fg);text-decoration:none;font-weight:500;border-radius:var(--r-ctl)}
+.nav a:hover{box-shadow:inset 0 -2px 0 currentColor}
+.nav a[aria-current="page"]{font-weight:700;box-shadow:inset 0 -3px 0 currentColor}
+.pusto{text-align:center;padding:var(--s8) var(--s4)}
+.pusto h3{font-size:18px;margin:0 0 var(--s2)}
+.pusto p{margin:0 auto var(--s4);max-width:52ch}
+</style>
+<script>
+/* Кабинет открывается двумя путями: прямо (localhost:8090 дома, 8772 на
+   сервере) и через дашборд по адресу /uchet — тогда прокси кладёт сюда
+   window.PREFIX. Все ссылки и запросы строятся от PRE, поэтому оба пути живут
+   без правок в коде экранов. */
+const PRE = window.PREFIX || "";
+addEventListener("DOMContentLoaded", () => { if(!PRE) return;
+  document.querySelectorAll('a[href^="/"]').forEach(a =>
+    a.setAttribute("href", PRE + a.getAttribute("href")));
+});
+</script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <h1>Кто в семье</h1>
+    <span class="step" data-field="step">—</span>
+    <span class="spacer"></span>
+    <span class="step" data-field="why">—</span>
+    <nav class="nav" aria-label="Разделы кабинета"><a href="/">Сегодня</a><a href="/vvod">Записать</a><a href="/plan">План</a><a href="/mesyac">Месяц</a><a href="/chto-esli">Что если</a><a href="/scheta">Счета</a><a href="/sostav" aria-current="page">Состав</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section data-region="intro">
+    <p class="note" data-field="intro">—</p>
+  </section>
+
+  <div class="grid cols">
+    <div>
+      <section data-region="sostav" aria-labelledby="h-sostav">
+        <h2 id="h-sostav">Участники <span class="hint">возраст решает, кто взрослый</span></h2>
+        <div class="grid people" data-list="people"></div>
+        <div class="row-actions" style="margin-top:var(--s3)">
+          <button class="btn btn-line" type="button" data-action="add">+ Добавить участника</button>
+        </div>
+      </section>
+    </div>
+
+    <div>
+      <section data-region="itog" aria-labelledby="h-itog">
+        <h2 id="h-itog">Что из этого следует</h2>
+        <article class="card summary" data-block="summary" data-key="derived">
+          <dl data-list="counts"></dl>
+          <h3 style="margin-top:var(--s4)">Правила расчёта</h3>
+          <ul class="plain" data-list="rules"></ul>
+          <h3 style="margin-top:var(--s4)">Проверка</h3>
+          <p class="note" data-field="validation">—</p>
+        </article>
+      </section>
+    </div>
+  </div>
+
+  <div class="sticky-save" data-region="save">
+    <button class="btn btn-main" type="button" data-action="save">Сохранить состав</button>
+    <span class="note" data-field="save-note" style="margin:0">—</span>
+  </div>
+
+  <footer>
+    <p class="note" data-field="source">—</p>
+  </footer>
+</main>
+
+<script>
+/* ДАННЫЕ. Разметка их не содержит: другой состав — другой объект.
+   Значения по умолчанию показывают случай, ради которого заведён признак
+   «живёт отдельно»: взрослая дочь съехала. */
+const DATA = {
+  step: "первый запуск · шаг 1 из 2",
+  why: "потом это можно изменить",
+  intro: "Кабинет считает по системе Чартаева, а она делит расходы между взрослыми и раздаёт фонды по участникам. Поэтому до первого расчёта нужно знать три вещи: сколько лет каждому, кем он приходится семье и живёт ли вместе со всеми. Возраст не украшение: с него берётся, кто взрослый, а взрослые несут общие затраты.",
+  sovershennoletie: 18,
+  rodstvo: ["отец","мать","сын","дочь","бабушка","дедушка","супруг(а)","другое"],
+  people: [
+    {key:"p1", name:"Сергей", age:42, rel:"отец", away:false, parents:[], svyaz_s:[]},
+    {key:"p2", name:"Ольга", age:39, rel:"мать", away:false, parents:[], svyaz_s:[]},
+    {key:"p3", name:"Анна", age:21, rel:"дочь", away:true, parents:["p1","p2"], svyaz_s:[]},
+    {key:"p4", name:"Миша", age:12, rel:"сын", away:false, parents:["p1","p2"], svyaz_s:[]}
+  ],
+  save_note: "Состав уходит в параметры расчёта: участники, кто взрослый, кто делит общие затраты.",
+  source: "Состав хранится в базе кабинета (uchet.db) и читается расчётным ядром при каждом отчёте. Правила Р-3 (состав семьи) и Р-4 (общие затраты делятся между взрослыми) — из RESHENIYA.md."
+};
+
+/* Кто может быть родителем: только эти две роли, и по одной на семью.
+   Возраст к родительству отношения не имеет — взрослая дочь остаётся дочерью. */
+const RODITELSKIE = ["отец", "мать"];
+const SVYAZ_POLE = {
+  "сын":      { pole: "parents", podpis: "Родители" },
+  "дочь":     { pole: "parents", podpis: "Родители" },
+  "бабушка":  { pole: "svyaz_s", podpis: "Чей родитель" },
+  "дедушка":  { pole: "svyaz_s", podpis: "Чей родитель" }
+};
+const el=(t,c,x)=>{const n=document.createElement(t); if(c)n.className=c;
+                   if(x!==undefined)n.textContent=x; return n;};
+const set=(k,v)=>document.querySelectorAll('[data-field="'+k+'"]').forEach(e=>e.textContent=v);
+const slot=i=>getComputedStyle(document.documentElement).getPropertyValue("--c"+((i%4)+1)).trim();
+const adult=p=>Number(p.age)>=DATA.sovershennoletie;
+const pays =p=>adult(p)&&!p.away;          /* общие затраты несут взрослые, живущие вместе */
+const named=k=>(DATA.people.find(p=>p.key===k)||{}).name||"—";
+
+function personCard(p,i){
+  const a=el("article","card person"); a.dataset.block="person"; a.dataset.key=p.key;
+
+  const hdr=el("div","hdr");
+  const dot=el("span","dot"); dot.style.background=slot(i); dot.setAttribute("aria-hidden","true");
+  const title=el("h3",null,p.name||"Без имени"); title.dataset.field="name";
+  hdr.append(dot,title);
+  hdr.append(el("span","badge",adult(p)?"взрослый":"ребёнок"));
+  if(p.away) hdr.append(el("span","badge away","живёт отдельно"));
+  a.append(hdr);
+
+  const f=el("div","fields");
+  const mk=(lab,node,id)=>{const w=el("div"); const l=el("label",null,lab); l.htmlFor=id;
+                           node.id=id; w.append(l,node); return w;};
+  const nm=el("input"); nm.type="text"; nm.value=p.name; nm.dataset.field="input-name";
+  nm.addEventListener("input",e=>{p.name=e.target.value; title.textContent=p.name||"Без имени"; render(false);});
+  const ag=el("input"); ag.type="number"; ag.min="0"; ag.max="120"; ag.value=p.age; ag.dataset.field="input-age";
+  ag.addEventListener("input",e=>{p.age=e.target.value; render();});
+  const rl=el("select"); rl.dataset.field="input-rel";
+  DATA.rodstvo.forEach(r=>{const o=el("option",null,r); o.value=r; if(r===p.rel)o.selected=true; rl.append(o);});
+  rl.addEventListener("change",e=>{
+    p.rel=e.target.value;
+    // Сменили роль — прежняя связь могла потерять смысл.
+    if(!SVYAZ_POLE[p.rel]){ p.parents=[]; p.svyaz_s=[]; }
+    if((p.rel==="сын"||p.rel==="дочь") && !p.parents.length){
+      p.parents = DATA.people.filter(o=>o.key!==p.key&&RODITELSKIE.includes(o.rel)).map(o=>o.key);
+    }
+    render();
+  });
+  f.append(mk("Имя",nm,"nm-"+p.key), mk("Возраст",ag,"ag-"+p.key), mk("Кем приходится",rl,"rl-"+p.key));
+  a.append(f);
+
+  /* Связи задаёт РОДСТВО, а не возраст. Родителями могут быть только те, кто
+     отмечен отцом и матерью, — их двое, сколько бы взрослых ни было в составе.
+     Бабушка и дедушка не родители детям: у них своя связь — чей они родитель. */
+  const roditeli = DATA.people.filter(o => o.key !== p.key && RODITELSKIE.includes(o.rel));
+  const svyaz = SVYAZ_POLE[p.rel];
+  if (svyaz && roditeli.length) {
+    const fs = el("fieldset"); fs.append(el("legend", null, svyaz.podpis));
+    const pole = svyaz.pole;                    // parents | svyaz_s
+    const ch = el("div", "chips");
+    roditeli.forEach(o => {
+      const b = el("button", "chip"); b.type = "button";
+      const on = p[pole].includes(o.key);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.append(el("span", "mark", on ? "✓" : "+"),
+               el("span", null, (o.name || "Без имени") + " · " + o.rel));
+      b.addEventListener("click", () => {
+        p[pole] = on ? p[pole].filter(k => k !== o.key) : p[pole].concat(o.key);
+        render();
+      });
+      ch.append(b);
+    });
+    fs.append(ch); a.append(fs);
+  }
+
+  /* Кто ведёт хозяйство — получатель доли управления (5 % по Чартаеву).
+     Раньше имя бралось из parametry.json, и на другом составе деньги уходили
+     человеку, которого в семье нет. */
+  const act=el("div","row-actions");
+  if(adult(p)){
+    const hz=el("button","chip"); hz.type="button";
+    hz.setAttribute("aria-pressed", p.hozyaystvo?"true":"false");
+    hz.append(el("span","mark",p.hozyaystvo?"✓":"+"), el("span",null,"ведёт хозяйство"));
+    hz.addEventListener("click",()=>{
+      DATA.people.forEach(o=>{o.hozyaystvo=0});   // получатель один
+      p.hozyaystvo = p.hozyaystvo ? 0 : 1;
+      render();
+    });
+    act.append(hz);
+  }
+  const away=el("button","chip"); away.type="button"; away.dataset.action="away";
+  away.setAttribute("aria-pressed",p.away?"true":"false");
+  away.append(el("span","mark",p.away?"✓":"+"),
+              el("span",null,"Живёт отдельно от семьи"));
+  away.addEventListener("click",()=>{p.away=!p.away; render();});
+  act.append(away);
+  if(DATA.people.length>1){
+    const del=el("button","btn btn-line btn-sm","Убрать"); del.type="button";
+    del.setAttribute("aria-label","Убрать участника "+(p.name||"без имени"));
+    del.addEventListener("click",()=>{
+      DATA.people=DATA.people.filter(o=>o.key!==p.key);
+      DATA.people.forEach(o=>o.parents=o.parents.filter(k=>k!==p.key));
+      render();
+    });
+    act.append(del);
+  }
+  a.append(act);
+
+  const d=el("p","derived"); d.dataset.field="derived";
+  const parts=[];
+  parts.push(adult(p)?"считается взрослым":"считается ребёнком");
+  parts.push(pays(p)?"делит общие затраты":"общие затраты не делит");
+  if(p.away) parts.push("живёт отдельно");
+  if(p.parents.length) parts.push("родители: "+p.parents.map(named).join(" и "));
+  if(p.svyaz_s && p.svyaz_s.length) parts.push("родитель: "+p.svyaz_s.map(named).join(" и "));
+  if(p.hozyaystvo) parts.push("ведёт хозяйство — получает долю управления");
+  d.textContent=parts.join(" · ");
+  a.append(d);
+  return a;
+}
+
+function summary(){
+  const ppl=DATA.people, adults=ppl.filter(adult), payers=ppl.filter(pays);
+  const away=ppl.filter(p=>p.away);
+  const counts=document.querySelector('[data-list="counts"]'); counts.innerHTML="";
+  [["Участников",ppl.length],["Взрослых",adults.length],
+   ["Детей",ppl.length-adults.length],["Живут отдельно",away.length],
+   ["Делят общие затраты",payers.length]].forEach(([k,v])=>{
+    counts.append(el("dt",null,k)); const dd=el("dd",null,String(v)); dd.dataset.field="count"; counts.append(dd);
+  });
+
+  const rules=document.querySelector('[data-list="rules"]'); rules.innerHTML="";
+  const add=t=>rules.append(el("li",null,t));
+  add("Р-3 состав: "+(ppl.map(p=>p.name||"без имени").join(", ")||"пусто"));
+  add("Р-4 общие затраты (еда, коммуналка) делят: "+
+      (payers.length?payers.map(p=>p.name).join(", "):"никто — расчёт не пойдёт"));
+  if(away.length) add("Живущие отдельно ("+away.map(p=>p.name).join(", ")+
+      ") остаются участниками: выручка, фонды и паи считаются им как всем, но еду и коммуналку общего дома они не оплачивают.");
+  add("Дети получают выручку внутри семьи (уборка, урожай, оценки) и не несут общих затрат.");
+  const hoz=ppl.filter(p=>p.hozyaystvo);
+  add("Долю управления (5 % накопления) получает: " +
+      (hoz.length ? hoz[0].name : "никто не отмечен — деньги останутся в фонде"));
+  const rod = ppl.filter(p => RODITELSKIE.includes(p.rel));
+  add("Родители в семье: " + (rod.length ? rod.map(p => (p.name||"без имени")+" ("+p.rel+")").join(", ")
+                                          : "не отмечены") +
+      ". Родителем считается только отмеченный отцом или матерью, возраст тут ни при чём.");
+
+  const problems=[];
+  if(!payers.length) problems.push("нет ни одного взрослого, живущего с семьёй — делить общие затраты не на кого");
+  if(ppl.some(p=>!p.name.trim())) problems.push("у кого-то не заполнено имя");
+  if(ppl.some(p=>p.age===""||isNaN(Number(p.age)))) problems.push("не у всех указан возраст");
+  if(!ppl.some(p=>p.hozyaystvo)) problems.push("не отмечено, кто ведёт хозяйство — доля управления зависнет в фонде");
+  const otcy=ppl.filter(p=>p.rel==="отец"), materi=ppl.filter(p=>p.rel==="мать");
+  if(otcy.length>1)   problems.push("отцов отмечено "+otcy.length+", должен быть один");
+  if(materi.length>1) problems.push("матерей отмечено "+materi.length+", должна быть одна");
+  const deti=ppl.filter(p=>p.rel==="сын"||p.rel==="дочь");
+  if(deti.length && !otcy.length && !materi.length)
+    problems.push("не отмечено, кто отец и мать — детей не к кому привязать");
+  const bezRoditeley=deti.filter(p=>!p.parents.length).map(p=>p.name||"без имени");
+  if(bezRoditeley.length) problems.push("не указаны родители: "+bezRoditeley.join(", "));
+  const v=document.querySelector('[data-field="validation"]');
+  v.textContent = problems.length ? "Нужно поправить: "+problems.join("; ")+"."
+                                  : "Состав заполнен, расчёт можно запускать.";
+  v.className = "note "+(problems.length?"warn":"good");
+  document.querySelector('[data-action="save"]').disabled = problems.length>0;
+}
+
+function render(rebuild=true){
+  if(rebuild){
+    const box=document.querySelector('[data-list="people"]'); box.innerHTML="";
+    DATA.people.forEach((p,i)=>box.append(personCard(p,i)));
+  }
+  summary();
+}
+
+document.querySelector('[data-action="add"]').addEventListener("click",()=>{
+  const n=DATA.people.length+1;
+  DATA.people.push({key:"p"+Date.now(),name:"",age:"",rel:"другое",away:false,parents:[],svyaz_s:[]});
+  render();
+});
+
+set("step",DATA.step); set("why",DATA.why); set("intro",DATA.intro);
+set("save-note",DATA.save_note); set("source",DATA.source);
+render();
+</script>
+
+<script>
+/* Связь с базой кабинета. Экран собран в мастерской и работал на своём объекте
+   DATA; здесь тот же объект наполняется из /api/sostav и туда же сохраняется.
+   Разметка и отрисовка не менялись — за это и держим data-* контракт. */
+(async () => {
+  const imenaKlyuchi = m => (n) => (m.find(p => p.name === n) || {}).key;
+  try {
+    const r = await (await fetch(PRE+"/api/sostav")).json();
+    const lyudi = r.lyudi || [];
+    if (lyudi.length) {
+      const spisok = lyudi.map(p => ({
+        key: "p" + p.id, name: p.imya, age: p.vozrast, rel: p.rodstvo || "другое",
+        away: !!p.otdelno, hozyaystvo: p.hozyaystvo || 0, parents: [], svyaz_s: [],
+        _rod: (p.roditeli || "").split(",").filter(Boolean),
+        _svz: (p.svyaz_s || "").split(",").filter(Boolean)
+      }));
+      const klyuch = imenaKlyuchi(spisok);
+      spisok.forEach(p => {
+        p.parents = p._rod.map(klyuch).filter(Boolean);
+        p.svyaz_s = p._svz.map(klyuch).filter(Boolean);
+        delete p._rod; delete p._svz;
+      });
+      DATA.people = spisok;
+    } else {
+      DATA.people = [{ key: "p1", name: "", age: "", rel: "отец", away: false, parents: [], svyaz_s: [] }];
+      DATA.step = "первый запуск · состав ещё не заведён";
+    }
+  } catch (e) {
+    DATA.step = "не удалось прочитать базу: " + e;
+  }
+  set("step", DATA.step);
+  render();
+})();
+
+document.querySelector('[data-action="save"]').addEventListener("click", async () => {
+  const imya = k => (DATA.people.find(o => o.key === k) || {}).name;
+  const lyudi = DATA.people.map(p => ({
+    imya: p.name.trim(), vozrast: Number(p.age) || 0, rodstvo: p.rel,
+    otdelno: !!p.away, hozyaystvo: p.hozyaystvo ? 1 : 0,
+    roditeli: p.parents.map(imya).filter(Boolean),
+    svyaz_s: (p.svyaz_s || []).map(imya).filter(Boolean)
+  }));
+  const s = document.querySelector('[data-field="save-note"]');
+  s.textContent = "сохраняю…";
+  const r = await (await fetch(PRE+"/api/sostav", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ lyudi })
+  })).json();
+  s.innerHTML = r.ok
+    ? 'Состав сохранён. <a href="/vvod">Записать первую операцию</a>'
+    : '<span style="color:var(--crit)">' + (r.err || "ошибка") + '</span>';
+});
+</script>
+</body>
+</html>

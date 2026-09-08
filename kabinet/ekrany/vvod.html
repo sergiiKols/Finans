@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Записать операцию</title>
+<style>
+/* Токены — из DESIGN.md проекта. Менять оба места вместе. */
+:root{
+  --page-bg:#faf9f7; --page-fg:#2b3038;
+  --card-bg:#ffffff; --card-fg:#2b3038;
+  --inset-bg:#f2f0ed; --inset-fg:#4e5560;
+  --head-bg:#333944; --head-fg:#f7f6f4;
+  --accent-bg:#1f63c9; --accent-fg:#ffffff;
+  --good:#0c7350; --warn:#7a5c00; --crit:#c33c2c;
+  --border:#e3e0dc; --ring:#1f63c9;
+  --c1:#2a6fd6; --c2:#d9682c; --c3:#12967a; --c4:#c98f16;
+  --r-card:12px; --r-ctl:8px; --r-tag:4px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s6:24px; --s8:32px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --page-bg:#1b1e23; --page-fg:#eceae7;
+    --card-bg:#23272e; --card-fg:#eceae7;
+    --inset-bg:#2a2f36; --inset-fg:#a8aeb8;
+    --head-bg:#0f1216; --head-fg:#f2f0ed;
+    --accent-bg:#5c9bf0; --accent-fg:#10141a;
+    --good:#39b483; --warn:#d3a13a; --crit:#e8705f;
+    --border:#343a42; --ring:#5c9bf0;
+    --c1:#5c9bf0; --c2:#e58b52; --c3:#3fb79a; --c4:#d9ab3f;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--page-bg); color:var(--page-fg);
+  font:400 14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1200px;margin:0 auto;padding:0 var(--s4)}
+@media (min-width:768px){.wrap{padding:0 var(--s6)}}
+
+/* --- шапка --- */
+.top{position:sticky;top:0;z-index:5;background:var(--head-bg);color:var(--head-fg);
+     border-bottom:1px solid var(--border)}
+.top .wrap{display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;
+           padding-top:var(--s3);padding-bottom:var(--s3)}
+h1{font-size:20px;line-height:1.25;font-weight:600;margin:0}
+.top .period{font-size:12px;font-weight:500;color:var(--head-fg);opacity:.75}
+.spacer{flex:1 1 auto}
+.who{font-size:12px;opacity:.75}
+
+/* --- кнопки --- */
+.btn{min-height:44px;padding:0 var(--s4);border-radius:var(--r-ctl);
+     font:600 14px/1 system-ui,sans-serif;cursor:pointer;border:1px solid transparent}
+.btn-main{background:var(--accent-bg);color:var(--accent-fg)}
+.btn-main:hover{filter:brightness(1.08)}
+.btn-main:active{filter:brightness(.92)}
+.btn-ghost{background:transparent;color:var(--head-fg);border-color:var(--border)}
+:where(a,button,summary,[tabindex]):focus-visible,.scroller:focus{
+  outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--r-tag)}
+
+/* --- секции и карточки --- */
+main{padding-bottom:var(--s8)}
+section{margin-top:var(--s6)}
+h2{font-size:15px;line-height:1.3;font-weight:600;margin:0 0 var(--s3)}
+h2 .hint{font-weight:400;font-size:12px;color:var(--inset-fg);margin-left:var(--s2)}
+.card{background:var(--card-bg);color:var(--card-fg);border:1px solid var(--border);
+      border-radius:var(--r-card);padding:var(--s4);min-width:0}
+.grid{display:grid;gap:var(--s3)}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.people{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.halves{grid-template-columns:1fr}
+@media (min-width:1024px){.halves{grid-template-columns:3fr 2fr;align-items:start}}
+
+/* --- плитка KPI --- */
+.kpi .lbl{font-size:12px;font-weight:500;color:var(--inset-fg);display:block}
+.kpi .val{font-size:30px;line-height:1.1;font-weight:650;display:block;margin:var(--s2) 0 var(--s1)}
+.kpi .base{font-size:12px;line-height:1.4;color:var(--inset-fg);display:block}
+.unit{font-size:16px;font-weight:500;color:var(--inset-fg)}
+
+/* --- участники --- */
+.person .name{font-weight:600;display:flex;align-items:baseline;gap:var(--s2)}
+.person .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.person .role{font-size:12px;color:var(--inset-fg);font-weight:400}
+.person dl{display:grid;grid-template-columns:1fr auto;gap:var(--s1) var(--s2);margin:var(--s3) 0 0}
+.person dt{font-size:12px;color:var(--inset-fg)}
+.person dd{margin:0;text-align:right;font-weight:500}
+.person dd.big{font-size:16px;font-weight:650}
+
+/* --- таблицы --- */
+.scroller{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px}
+caption{text-align:left;font-size:12px;color:var(--inset-fg);padding-bottom:var(--s2)}
+th,td{padding:var(--s2) var(--s2);border-bottom:1px solid var(--border);text-align:left;
+      vertical-align:top}
+thead th{background:var(--inset-bg);color:var(--inset-fg);font-size:12px;font-weight:500;
+         position:sticky;top:0}
+td.num,th.num{text-align:right;white-space:nowrap}
+tfoot td{border-top:2px solid var(--border);border-bottom:none;font-weight:600}
+tbody tr:last-child td{border-bottom:none}
+
+/* --- мелочи --- */
+.badge{display:inline-block;font-size:12px;padding:1px 6px;border-radius:var(--r-tag);
+       background:var(--inset-bg);color:var(--inset-fg)}
+.good{color:var(--good)} .warn{color:var(--warn)} .crit{color:var(--crit)}
+.muted{color:var(--inset-fg)}
+details{margin-top:var(--s3)}
+summary{cursor:pointer;font-size:14px;font-weight:500;min-height:44px;display:flex;
+        align-items:center;gap:var(--s2)}
+details[open] .chev{transform:rotate(90deg)}
+.chev{display:inline-block;transition:transform 160ms var(--ease-out)}
+@media (prefers-reduced-motion:reduce){.chev{transition:none}}
+.legend{display:flex;flex-wrap:wrap;gap:var(--s3);margin-top:var(--s2);font-size:12px;
+        color:var(--inset-fg)}
+.legend span{display:flex;align-items:center;gap:var(--s1)}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+.note{font-size:14px;color:var(--inset-fg);line-height:1.5;max-width:68ch}
+footer{margin-top:var(--s8);padding-top:var(--s4);border-top:1px solid var(--border)}
+</style>
+<style>
+.fields{display:grid;gap:var(--s3);grid-template-columns:1fr}
+.fields > div{min-width:0}
+@media (min-width:560px){.fields{grid-template-columns:1fr 1fr 1fr}}
+label{display:block;font-size:12px;font-weight:500;color:var(--inset-fg);margin-bottom:var(--s1)}
+input,select{width:100%;min-width:0;max-width:100%;min-height:44px;padding:0 var(--s3);border:1px solid var(--border);
+  border-radius:var(--r-ctl);background:var(--card-bg);color:var(--card-fg);
+  font:400 14px/1 system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.btn-line{border-color:var(--border);color:var(--page-fg);background:transparent}
+.btn-sm{padding:0 var(--s3);font-size:13px}
+</style>
+
+<style>
+/* Общая навигация на всех экранах: до 17.08.2026 её не было, и ввод терялся —
+   человек видел отчёт и не понимал, куда нажать, чтобы записать. */
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+/* Текущий раздел отмечается подчёркиванием, а не подложкой: полупрозрачный
+   фон на тёмной шапке съедает контраст — аудит показал 1.08:1 вместо 4.5. */
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;
+  color:var(--head-fg);text-decoration:none;font-weight:500;border-radius:var(--r-ctl)}
+.nav a:hover{box-shadow:inset 0 -2px 0 currentColor}
+.nav a[aria-current="page"]{font-weight:700;box-shadow:inset 0 -3px 0 currentColor}
+.pusto{text-align:center;padding:var(--s8) var(--s4)}
+.pusto h3{font-size:18px;margin:0 0 var(--s2)}
+.pusto p{margin:0 auto var(--s4);max-width:52ch}
+</style>
+<script>
+/* Кабинет открывается двумя путями: прямо (localhost:8090 дома, 8772 на
+   сервере) и через дашборд по адресу /uchet — тогда прокси кладёт сюда
+   window.PREFIX. Все ссылки и запросы строятся от PRE, поэтому оба пути живут
+   без правок в коде экранов. */
+const PRE = window.PREFIX || "";
+addEventListener("DOMContentLoaded", () => { if(!PRE) return;
+  document.querySelectorAll('a[href^="/"]').forEach(a =>
+    a.setAttribute("href", PRE + a.getAttribute("href")));
+});
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>Записать</h1>
+    <span class="period">журнал фактов</span>
+    <span class="spacer"></span>
+    <nav class="nav" aria-label="Разделы кабинета"><a href="/">Сегодня</a><a href="/vvod" aria-current="page">Записать</a><a href="/plan">План</a><a href="/mesyac">Месяц</a><a href="/chto-esli">Что если</a><a href="/scheta">Счета</a><a href="/sostav">Состав</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section data-region="forma" aria-labelledby="hf">
+    <h2 id="hf">Новая операция <span class="hint">кто, когда, за что, сколько</span></h2>
+    <article class="card">
+      <p class="note" style="margin-top:0">Выберите тип: <b>деньги извне</b> — зарплата и подработка; <b>обязательная трата</b> — еда, коммуналка, электричество; <b>оплата внутри семьи</b> — работа по дому; <b>выплата из фонда</b> — учёба, лечение, оценки.</p>
+      <div class="fields">
+        <div><label for="tip">Что за операция</label>
+          <select id="tip">
+            <option value="vneshnyaya">Деньги извне</option>
+            <option value="zatrata">Обязательная трата</option>
+            <option value="lichnaya">Личная трата</option>
+            <option value="vnutrennyaya">Оплата внутри семьи</option>
+            <option value="iz_fonda">Выплата из фонда</option>
+          </select></div>
+        <div><label for="data">Дата</label><input type="date" id="data"></div>
+        <div><label for="summa">Сумма, ₽</label><input type="number" id="summa" min="0" step="0.01" placeholder="0,00"></div>
+      </div>
+      <div class="fields" style="margin-top:var(--s3)">
+        <div id="w-komu"><label for="komu">Кому пришло</label><select id="komu"></select></div>
+        <div id="w-ot"><label for="ot">Источник</label><select id="ot"></select></div>
+        <div><label for="statya">За что</label><input type="text" id="statya" placeholder="например: зарплата"></div>
+      </div>
+      <div style="margin-top:var(--s3)">
+        <label for="kem">Записывает</label>
+        <select id="kem" style="max-width:260px"></select>
+      </div>
+      <div id="razbivka" class="card" style="margin-top:var(--s4);display:none;background:var(--inset-bg)">
+        <b>Как делится это поступление по плану месяца</b>
+        <div id="razbivka-stroki" style="margin-top:8px;display:grid;gap:6px"></div>
+        <p class="note" id="razbivka-podskazka" style="margin:8px 0 0"></p>
+      </div>
+
+      <div class="row-actions" style="margin-top:var(--s4);display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap">
+        <button class="btn btn-main" type="button" id="save">Записать</button>
+        <span class="note" id="status" style="margin:0">—</span>
+      </div>
+    </article>
+  </section>
+
+  <section data-region="posledniye" aria-labelledby="hp">
+    <h2 id="hp">Записано в этом месяце</h2>
+    <article class="card">
+      <div class="scroller" tabindex="0" role="region" aria-label="Операции месяца, таблица">
+        <table data-block="table" data-key="ops">
+          <thead><tr><th scope="col">Дата</th><th scope="col">Тип</th><th scope="col">Кому</th>
+            <th scope="col">За что</th><th scope="col">Источник</th>
+            <th scope="col" class="num">Сумма</th><th scope="col"></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+</main>
+
+<script>
+const money=n=>Number(n).toLocaleString("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2});
+const el=(t,c,x)=>{const n=document.createElement(t);if(c)n.className=c;if(x!==undefined)n.textContent=x;return n};
+const TIPY={vneshnyaya:"извне",vnutrennyaya:"внутри",iz_fonda:"из фонда",zatrata:"затрата",lichnaya:"личная"};
+const FONDY=[["zdravoohranenie","Фонд здравоохранения"],["obrazovanie","Фонд образования"],
+             ["rezerv","Резервный фонд"],["strahovoy","Страховой фонд"],
+             ["upravlenie","Доля управления"],["zemelnye_pai","Земельные паи"]];
+let LYUDI=[];
+const $=id=>document.getElementById(id);
+
+function zapolnit(sel, spisok){ sel.innerHTML=""; spisok.forEach(([v,t])=>{
+  const o=el("option",null,t); o.value=v; sel.append(o)}); }
+
+function poTipu(){
+  const t=$("tip").value;
+  $("w-komu").style.display = (t==="zatrata") ? "none" : "";
+  // Личная трата: спрашиваем ЧЕЙ расход, источник не нужен — платит он сам.
+  $("w-ot").style.display   = (t==="vneshnyaya"||t==="zatrata"||t==="lichnaya") ? "none" : "";
+  $("statya").placeholder = {vneshnyaya:"зарплата",zatrata:"еда / коммунальные / электричество",
+                             vnutrennyaya:"уборка, готовка, урожай",
+                             iz_fonda:"оценки «5», лечение, учебники",
+                             lichnaya:"кафе, книга, подарок"}[t];
+  if(t==="iz_fonda") zapolnit($("ot"), FONDY);
+  else zapolnit($("ot"), LYUDI.map(p=>[p.imya,p.imya]));
+}
+
+async function zagruzit(){
+  const s=await (await fetch(PRE+"/api/sostav")).json();
+  LYUDI=s.lyudi||[];
+  if(!LYUDI.length){ $("status").innerHTML='<span style="color:var(--crit)">Сначала заведите состав семьи</span>';
+    $("save").disabled=true; }
+  zapolnit($("komu"), LYUDI.map(p=>[p.imya,p.imya]));
+  zapolnit($("kem"),  LYUDI.filter(p=>(p.vozrast||0)>=18).map(p=>[p.imya,p.imya]));
+  $("data").value=new Date().toISOString().slice(0,10);
+  poTipu(); spisok(); doli();
+}
+
+async function spisok(){
+  const gm=$("data").value.slice(0,7)||new Date().toISOString().slice(0,7);
+  const r=await (await fetch(PRE+"/api/operacii?mesyac="+gm)).json();
+  const tb=document.querySelector('[data-key="ops"] tbody'); tb.innerHTML="";
+  (r.operacii||[]).slice().reverse().forEach(o=>{
+    const tr=el("tr");
+    const b=el("button","btn btn-line btn-sm","Убрать"); b.type="button";
+    b.setAttribute("aria-label","Убрать запись "+(o.statya||""));
+    b.style.minHeight="44px";
+    b.onclick=async()=>{ await fetch(PRE+"/api/operacii/udalit",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify({id:o.id})}); spisok(); };
+    tr.append(el("td",null,o.data.slice(8)+"."+o.data.slice(5,7)),el("td",null,TIPY[o.tip]||o.tip),
+              el("td",null,o.uchastnik||"—"),el("td",null,o.statya||"—"),
+              el("td",null,o.istochnik||"—"),el("td","num",money(o.summa)));
+    const td=el("td"); td.append(b); tr.append(td); tb.append(tr);
+  });
+}
+
+let DOLI=null;
+async function doli(){
+  const gm=($("data").value||new Date().toISOString().slice(0,10)).slice(0,7);
+  DOLI=await (await fetch(PRE+"/api/raspredelenie?mesyac="+gm)).json();
+  razbivka();
+}
+function razbivka(){
+  const box=$("razbivka"), sum=parseFloat($("summa").value||0);
+  if($("tip").value!=="vneshnyaya" || !sum || !DOLI){ box.style.display="none"; return; }
+  box.style.display="";
+  const st=$("razbivka-stroki"); st.innerHTML="";
+  if(!DOLI.ok){
+    st.innerHTML='<span class="note">На этот месяц не заведён план — делить нечем. '+
+                 '<a href="/plan">Завести план</a></span>';
+    $("razbivka-podskazka").textContent=""; return;
+  }
+  const nak=sum*DOLI.dolya_nakoplenie, ob=sum*DOLI.dolya_obyazatelnoe,
+        sv=Math.max(0,sum*DOLI.dolya_svobodnoe);
+  [["в накопление (семь субсчетов)",nak,"--c1"],["отложить на обязательное",ob,"--c2"],
+   ["свободные, на руки",sv,"--c3"]].forEach(([n,v,c])=>{
+    const r=el("div"); r.style.cssText="display:flex;align-items:center;gap:8px";
+    const sw=el("span"); sw.style.cssText="width:10px;height:10px;border-radius:2px;background:var("+c+")";
+    const z=el("span",null,money(v)+" ₽"); z.style.cssText="margin-left:auto;font-weight:600";
+    r.append(sw,el("span",null,n),z); st.append(r);
+  });
+  $("razbivka-podskazka").textContent =
+    "После записи перевести "+money(nak)+" ₽ на накопительный счёт. Доли взяты из плана "+
+    "месяца (доход "+money(DOLI.plan_dohod)+" ₽, норма "+
+    (DOLI.norma*100).toLocaleString("ru-RU",{maximumFractionDigits:1})+" %).";
+}
+$("summa").oninput=razbivka;
+$("tip").onchange=()=>{poTipu();razbivka()};
+$("data").onchange=()=>{spisok();doli()};
+$("save").onclick=async()=>{
+  const t=$("tip").value;
+  const telo={data:$("data").value,tip:t,summa:$("summa").value,statya:$("statya").value,
+              uchastnik:(t==="zatrata")?"":$("komu").value,
+              istochnik:(t==="vneshnyaya")?"извне семьи":((t==="zatrata"||t==="lichnaya")?"":$("ot").value),
+              sozdal:$("kem").value};
+  if(!telo.summa){ $("status").innerHTML='<span style="color:var(--crit)">Не указана сумма</span>'; return; }
+  const r=await (await fetch(PRE+"/api/operacii",{method:"POST",
+    headers:{"Content-Type":"application/json"},body:JSON.stringify(telo)})).json();
+  $("status").innerHTML = r.ok ? '<span style="color:var(--good)">Записано</span>'
+                               : '<span style="color:var(--crit)">'+(r.err||"ошибка")+'</span>';
+  if(r.ok){
+    if(telo.tip==="vneshnyaya" && DOLI && DOLI.ok){
+      const nak=Number(telo.summa)*DOLI.dolya_nakoplenie;
+      $("status").innerHTML='<span style="color:var(--good)">Записано.</span> '+
+        'Перевести <b>'+money(nak)+' ₽</b> на накопительный счёт.';
+    }
+    $("summa").value=""; $("statya").value=""; spisok(); razbivka();
+  }
+};
+zagruzit();
+</script>
+
+</body>
+</html>

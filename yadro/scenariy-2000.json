@@ -1,0 +1,63 @@
+{
+  "_": "СЦЕНАРИЙ для разбора с семьёй: внешний доход Сергея 2000, состав и правила — как сейчас в кабинете.",
+  "uchastniki": [
+    "Сергей",
+    "Лена",
+    "Лера",
+    "Паша",
+    "Катя"
+  ],
+  "vneshnyaya_vyruchka": {
+    "Сергей": 2000
+  },
+  "lichnye_zatraty": {},
+  "obshchie_zatraty": {
+    "еда": 1000,
+    "коммунальные": 300
+  },
+  "vnutrennie_pokupki": [
+    {
+      "komu": "Лена",
+      "chto": "ведение хозяйства: готовка, стирка, порядок",
+      "ot_uchastnika": "Сергей",
+      "dolya_potrebleniya": 0.3
+    },
+    {
+      "komu": "Катя",
+      "chto": "уборка квартиры, месяц",
+      "ot_uchastnika": "Сергей",
+      "dolya_potrebleniya": 0.05
+    },
+    {
+      "komu": "Паша",
+      "chto": "урожай с дачи",
+      "ot_uchastnika": "Сергей",
+      "dolya_potrebleniya": 0.075
+    },
+    {
+      "komu": "Катя",
+      "chto": "оценки «5» — 4 шт.",
+      "iz_fonda": "obrazovanie",
+      "dolya_fonda": 0.6667
+    },
+    {
+      "komu": "Паша",
+      "chto": "оценки «5» — 2 шт.",
+      "iz_fonda": "obrazovanie",
+      "dolya_fonda": 1.0
+    },
+    {
+      "komu": "Лена",
+      "chto": "месяц без болезней в семье",
+      "iz_fonda": "zdravoohranenie",
+      "dolya_fonda": 0.25
+    }
+  ],
+  "deti": [
+    "Паша",
+    "Катя"
+  ],
+  "otdelno": [
+    "Лера"
+  ]
+}

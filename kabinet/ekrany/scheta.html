@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Счета — сколько денег есть</title>
+<style>
+/* Токены — из DESIGN.md проекта. Менять оба места вместе. */
+:root{
+  --page-bg:#faf9f7; --page-fg:#2b3038;
+  --card-bg:#ffffff; --card-fg:#2b3038;
+  --inset-bg:#f2f0ed; --inset-fg:#4e5560;
+  --head-bg:#333944; --head-fg:#f7f6f4;
+  --accent-bg:#1f63c9; --accent-fg:#ffffff;
+  --good:#0c7350; --warn:#7a5c00; --crit:#c33c2c;
+  --border:#e3e0dc; --ring:#1f63c9;
+  --c1:#2a6fd6; --c2:#d9682c; --c3:#12967a; --c4:#c98f16;
+  --r-card:12px; --r-ctl:8px; --r-tag:4px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s6:24px; --s8:32px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --page-bg:#1b1e23; --page-fg:#eceae7;
+    --card-bg:#23272e; --card-fg:#eceae7;
+    --inset-bg:#2a2f36; --inset-fg:#a8aeb8;
+    --head-bg:#0f1216; --head-fg:#f2f0ed;
+    --accent-bg:#5c9bf0; --accent-fg:#10141a;
+    --good:#39b483; --warn:#d3a13a; --crit:#e8705f;
+    --border:#343a42; --ring:#5c9bf0;
+    --c1:#5c9bf0; --c2:#e58b52; --c3:#3fb79a; --c4:#d9ab3f;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--page-bg); color:var(--page-fg);
+  font:400 14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1200px;margin:0 auto;padding:0 var(--s4)}
+@media (min-width:768px){.wrap{padding:0 var(--s6)}}
+
+/* --- шапка --- */
+.top{position:sticky;top:0;z-index:5;background:var(--head-bg);color:var(--head-fg);
+     border-bottom:1px solid var(--border)}
+.top .wrap{display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;
+           padding-top:var(--s3);padding-bottom:var(--s3)}
+h1{font-size:20px;line-height:1.25;font-weight:600;margin:0}
+.top .period{font-size:12px;font-weight:500;color:var(--head-fg);opacity:.75}
+.spacer{flex:1 1 auto}
+.who{font-size:12px;opacity:.75}
+
+/* --- кнопки --- */
+.btn{min-height:44px;padding:0 var(--s4);border-radius:var(--r-ctl);
+     font:600 14px/1 system-ui,sans-serif;cursor:pointer;border:1px solid transparent}
+.btn-main{background:var(--accent-bg);color:var(--accent-fg)}
+.btn-main:hover{filter:brightness(1.08)}
+.btn-main:active{filter:brightness(.92)}
+.btn-ghost{background:transparent;color:var(--head-fg);border-color:var(--border)}
+:where(a,button,summary,[tabindex]):focus-visible,.scroller:focus{
+  outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--r-tag)}
+
+/* --- секции и карточки --- */
+main{padding-bottom:var(--s8)}
+section{margin-top:var(--s6)}
+h2{font-size:15px;line-height:1.3;font-weight:600;margin:0 0 var(--s3)}
+h2 .hint{font-weight:400;font-size:12px;color:var(--inset-fg);margin-left:var(--s2)}
+.card{background:var(--card-bg);color:var(--card-fg);border:1px solid var(--border);
+      border-radius:var(--r-card);padding:var(--s4);min-width:0}
+.grid{display:grid;gap:var(--s3)}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.people{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.halves{grid-template-columns:1fr}
+@media (min-width:1024px){.halves{grid-template-columns:3fr 2fr;align-items:start}}
+
+/* --- плитка KPI --- */
+.kpi .lbl{font-size:12px;font-weight:500;color:var(--inset-fg);display:block}
+.kpi .val{font-size:30px;line-height:1.1;font-weight:650;display:block;margin:var(--s2) 0 var(--s1)}
+.kpi .base{font-size:12px;line-height:1.4;color:var(--inset-fg);display:block}
+.unit{font-size:16px;font-weight:500;color:var(--inset-fg)}
+
+/* --- участники --- */
+.person .name{font-weight:600;display:flex;align-items:baseline;gap:var(--s2)}
+.person .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.person .role{font-size:12px;color:var(--inset-fg);font-weight:400}
+.person dl{display:grid;grid-template-columns:1fr auto;gap:var(--s1) var(--s2);margin:var(--s3) 0 0}
+.person dt{font-size:12px;color:var(--inset-fg)}
+.person dd{margin:0;text-align:right;font-weight:500}
+.person dd.big{font-size:16px;font-weight:650}
+
+/* --- таблицы --- */
+.scroller{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px}
+caption{text-align:left;font-size:12px;color:var(--inset-fg);padding-bottom:var(--s2)}
+th,td{padding:var(--s2) var(--s2);border-bottom:1px solid var(--border);text-align:left;
+      vertical-align:top}
+thead th{background:var(--inset-bg);color:var(--inset-fg);font-size:12px;font-weight:500;
+         position:sticky;top:0}
+td.num,th.num{text-align:right;white-space:nowrap}
+tfoot td{border-top:2px solid var(--border);border-bottom:none;font-weight:600}
+tbody tr:last-child td{border-bottom:none}
+
+/* --- мелочи --- */
+.badge{display:inline-block;font-size:12px;padding:1px 6px;border-radius:var(--r-tag);
+       background:var(--inset-bg);color:var(--inset-fg)}
+.good{color:var(--good)} .warn{color:var(--warn)} .crit{color:var(--crit)}
+.muted{color:var(--inset-fg)}
+details{margin-top:var(--s3)}
+summary{cursor:pointer;font-size:14px;font-weight:500;min-height:44px;display:flex;
+        align-items:center;gap:var(--s2)}
+details[open] .chev{transform:rotate(90deg)}
+.chev{display:inline-block;transition:transform 160ms var(--ease-out)}
+@media (prefers-reduced-motion:reduce){.chev{transition:none}}
+.legend{display:flex;flex-wrap:wrap;gap:var(--s3);margin-top:var(--s2);font-size:12px;
+        color:var(--inset-fg)}
+.legend span{display:flex;align-items:center;gap:var(--s1)}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+.note{font-size:14px;color:var(--inset-fg);line-height:1.5;max-width:68ch}
+footer{margin-top:var(--s8);padding-top:var(--s4);border-top:1px solid var(--border)}
+</style>
+<style>
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;
+  color:var(--head-fg);text-decoration:none;font-weight:500;border-radius:var(--r-ctl)}
+.nav a:hover{box-shadow:inset 0 -2px 0 currentColor}
+.nav a[aria-current="page"]{font-weight:700;box-shadow:inset 0 -3px 0 currentColor}
+.s-row{display:grid;gap:8px;grid-template-columns:1fr;margin-bottom:20px;
+  padding-bottom:16px;border-bottom:1px solid var(--border)}
+.s-row:last-child{border-bottom:none}
+@media (min-width:760px){.s-row{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));align-items:end}}
+.s-row > div{min-width:0}
+.s-row label{display:block;font-size:12px;font-weight:500;color:var(--inset-fg);margin-bottom:4px}
+.s-row input,.s-row select{width:100%;min-width:0;text-overflow:ellipsis;min-height:44px;padding:0 10px;
+  border:1px solid var(--border);border-radius:var(--r-ctl);background:var(--card-bg);
+  color:var(--card-fg);font:400 14px/1 system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.s-knopki{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-height:44px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;
+  border:1px solid var(--border);border-radius:var(--r-ctl);background:var(--card-bg);
+  color:var(--card-fg);font-size:13px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--inset-bg);border-color:var(--inset-fg);font-weight:600}
+.btn-line{border-color:var(--border);color:var(--page-fg);background:transparent}
+.btn-sm{padding:0 12px;font-size:13px;min-height:44px}
+.grid.cols{display:grid;gap:var(--s3);grid-template-columns:1fr}
+@media (min-width:1024px){.grid.cols{grid-template-columns:3fr 2fr;align-items:start}}
+.sticky-save{position:sticky;bottom:0;background:var(--page-bg);border-top:1px solid var(--border);
+  padding:var(--s3) 0;margin-top:var(--s6);display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap}
+.good{color:var(--good)} .crit{color:var(--crit)}
+</style>
+<script>
+/* Кабинет открывается двумя путями: прямо (localhost:8090 дома, 8772 на
+   сервере) и через дашборд по адресу /uchet — тогда прокси кладёт сюда
+   window.PREFIX. Все ссылки и запросы строятся от PRE, поэтому оба пути живут
+   без правок в коде экранов. */
+const PRE = window.PREFIX || "";
+addEventListener("DOMContentLoaded", () => { if(!PRE) return;
+  document.querySelectorAll('a[href^="/"]').forEach(a =>
+    a.setAttribute("href", PRE + a.getAttribute("href")));
+});
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>Счета</h1>
+    <span class="period">сколько денег есть на самом деле</span>
+    <span class="spacer"></span>
+    <nav class="nav" aria-label="Разделы кабинета"><a href="/">Сегодня</a><a href="/vvod">Записать</a><a href="/plan">План</a><a href="/mesyac">Месяц</a><a href="/chto-esli">Что если</a><a href="/scheta" aria-current="page">Счета</a><a href="/sostav">Состав</a></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section data-region="zachem">
+    <p class="note">Банковского API для физических лиц нет, поэтому остатки вводятся руками —
+      раз в неделю, когда делаете перевод. Зато отсюда кабинет знает, <b>сколько денег
+      реально есть</b>, и сверяет это с тем, сколько должно быть накоплено по учёту.
+      Отметьте галочкой те счета, где лежат накопления семьи.</p>
+  </section>
+
+  <div class="grid cols">
+    <div>
+      <section data-region="spisok" aria-labelledby="hs">
+        <h2 id="hs">Где лежат деньги</h2>
+        <article class="card">
+          <div data-list="scheta"></div>
+          <button class="btn btn-line btn-sm" type="button" id="add" style="margin-top:12px">+ Счёт</button>
+        </article>
+      </section>
+    </div>
+    <div>
+      <section data-region="svodka" aria-labelledby="hv">
+        <h2 id="hv">Сверка с учётом</h2>
+        <article class="card"><div id="svodka">—</div>
+          <p class="note" id="vyvod" style="margin-top:12px">—</p></article>
+      </section>
+    </div>
+  </div>
+
+  <div class="sticky-save">
+    <button class="btn btn-main" type="button" id="save">Сохранить остатки</button>
+    <span class="note" id="status" style="margin:0">—</span>
+  </div>
+</main>
+
+<script>
+const money=n=>Number(n).toLocaleString("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2});
+const el=(t,c,x)=>{const n=document.createElement(t);if(c)n.className=c;if(x!==undefined)n.textContent=x;return n};
+const $=id=>document.getElementById(id);
+const VIDY=[["tekushchiy","текущий"],["nakopitelnyy","накопит."],
+            ["nalichnye","наличные"],["prochee","прочее"]];
+let S=[];
+
+function stroki(){
+  const box=document.querySelector('[data-list="scheta"]'); box.innerHTML="";
+  S.forEach((s,i)=>{
+    const r=el("div","s-row"); r.dataset.block="schet"; r.dataset.key="s"+i;
+    const nz=el("input"); nz.type="text"; nz.value=s.nazvanie||""; nz.placeholder="счёт";
+    nz.setAttribute("aria-label","Название счёта");
+    nz.oninput=e=>{s.nazvanie=e.target.value};
+    const vd=el("select"); vd.setAttribute("aria-label","Вид счёта");
+    VIDY.forEach(([v,t])=>{const o=el("option",null,t);o.value=v;if(v===s.vid)o.selected=true;vd.append(o)});
+    vd.onchange=e=>{s.vid=e.target.value; if(e.target.value==="nakopitelnyy"){s.nakoplenie=1; stroki(); svodka()}};
+    const os=el("input"); os.type="number"; os.step="0.01"; os.value=s.ostatok||0;
+    os.setAttribute("aria-label","Остаток");
+    os.oninput=e=>{s.ostatok=parseFloat(e.target.value||0); svodka()};
+    const st=el("input"); st.type="number"; st.step="0.1"; st.value=((s.stavka||0)*100).toFixed(1);
+    st.setAttribute("aria-label","Ставка годовых, процент");
+    st.oninput=e=>{s.stavka=(parseFloat(e.target.value||0))/100; svodka()};
+    const nk=el("button","chip"); nk.type="button";
+    nk.setAttribute("aria-pressed", s.nakoplenie?"true":"false");
+    nk.append(el("span","mark",s.nakoplenie?"✓":"+"), el("span",null,"накопления"));
+    nk.onclick=()=>{s.nakoplenie=s.nakoplenie?0:1; stroki(); svodka()};
+    const del=el("button","btn btn-line btn-sm","Убрать"); del.type="button";
+    del.setAttribute("aria-label","Убрать счёт "+(s.nazvanie||""));
+    del.onclick=()=>{S.splice(i,1); stroki(); svodka()};
+    [["Название",nz],["Вид",vd],["Остаток, ₽",os],["Ставка, %",st]].forEach(([lab,pole])=>{
+      const w=el("div"); const l=el("label",null,lab); w.append(l,pole); r.append(w)});
+    const d=el("div","s-knopki"); d.append(nk,del); r.append(d);
+    box.append(r);
+  });
+  if(!S.length) box.append(el("p","note","Счетов пока нет — добавьте первый."));
+}
+
+async function svodka(){
+  const box=$("svodka");
+  const vsego=S.reduce((a,s)=>a+(+s.ostatok||0),0);
+  const nak=S.filter(s=>s.nakoplenie).reduce((a,s)=>a+(+s.ostatok||0),0);
+  const vgod=S.reduce((a,s)=>a+(+s.ostatok||0)*(+s.stavka||0),0);
+  const d=await (await fetch(PRE+"/api/scheta")).json();
+  box.innerHTML="";
+  const dl=el("dl"); dl.style.cssText="display:grid;grid-template-columns:1fr auto;gap:8px;margin:0";
+  const p=(k,v,zhirno)=>{dl.append(el("dt",null,k)); const dd=el("dd",null,v);
+    dd.style.cssText="margin:0;text-align:right;font-weight:"+(zhirno?"700":"600"); dl.append(dd)};
+  p("Всего на счетах",money(vsego)+" ₽",true);
+  p("из них накопления",money(nak)+" ₽");
+  p("Приносят в месяц",money(vgod/12)+" ₽");
+  p("По учёту накоплено",money(d.uchet_nakopleno)+" ₽");
+  p("· паи участников",money(d.uchet_pai)+" ₽");
+  p("· остаток фондов",money(d.uchet_fondy)+" ₽");
+  // Карманы входят в «накоплено», но подстрокой не выводились — шапка не
+  // сходилась со своими же слагаемыми ровно на сумму карманов.
+  if((d.uchet_karmany||0)>0.005) p("· карманы",money(d.uchet_karmany)+" ₽");
+  box.append(dl);
+  const raz=nak-d.uchet_nakopleno;
+  const v=$("vyvod");
+  if(!d.mesyacev){ v.className="note"; v.textContent="Ни одного посчитанного месяца — сверять пока не с чем."; return; }
+  if(Math.abs(raz)<0.5){ v.className="note good"; v.textContent="Сходится: на накопительных счетах ровно столько, сколько числится по учёту."; }
+  else if(raz>0){ v.className="note"; v.textContent="На накопительных счетах на "+money(raz)+
+    " ₽ больше учётного. Обычно это личные деньги, которые просто лежат там же, или ещё не записанное поступление."; }
+  else { v.className="note crit"; v.textContent="На накопительных счетах на "+money(-raz)+
+    " ₽ меньше учётного. Значит часть накопленного не переведена или потрачена — проверьте переводы."; }
+}
+
+$("add").onclick=()=>{S.push({nazvanie:"",vid:"tekushchiy",ostatok:0,stavka:0,nakoplenie:0}); stroki(); svodka()};
+$("save").onclick=async()=>{
+  $("status").textContent="сохраняю…";
+  const r=await (await fetch(PRE+"/api/scheta",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({scheta:S})})).json();
+  $("status").innerHTML = r.ok ? '<span style="color:var(--good)">Сохранено</span>'
+                               : '<span style="color:var(--crit)">ошибка</span>';
+  svodka();
+};
+(async()=>{ const d=await (await fetch(PRE+"/api/scheta")).json(); S=d.scheta||[]; stroki(); svodka(); })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "_": "ПРОВЕРОЧНЫЙ ПРОГОН сентября 2026: те же трудовые числа, что в августе, но с балансом на начало месяца и размещённым капиталом. Заведён 17.08.2026, чтобы проверить механизм дохода на пай.",
+  "balans": "balans-sentyabr.json",
+  "aktivy": "aktivy-sentyabr.json",
+  "uchastniki": ["папа", "мама", "дочь", "сын"],
+  "vneshnyaya_vyruchka": {"папа": 4000, "мама": 400},
+  "lichnye_zatraty": {},
+  "obshchie_zatraty": {"еда": 1000, "коммунальные": 300},
+  "karmany_vhodyashchie": {"одежда и обувь детям": 100},
+  "vnutrennie_pokupki": [
+    {"komu": "мама", "chto": "ведение хозяйства: готовка, стирка, порядок", "ot_uchastnika": "папа", "dolya_potrebleniya": 0.3},
+    {"komu": "дочь", "chto": "уборка квартиры, месяц", "ot_uchastnika": "папа", "dolya_potrebleniya": 0.05},
+    {"komu": "сын", "chto": "урожай с дачи", "ot_uchastnika": "папа", "dolya_potrebleniya": 0.075},
+    {"komu": "дочь", "chto": "оценки «5» — 4 шт. (2/3 фонда)", "iz_fonda": "obrazovanie", "dolya_fonda": 0.6667},
+    {"komu": "сын", "chto": "оценки «5» — 2 шт. (1/3 фонда)", "iz_fonda": "obrazovanie", "dolya_fonda": 1.0},
+    {"komu": "мама", "chto": "месяц без болезней в семье", "iz_fonda": "zdravoohranenie", "dolya_fonda": 0.25}
+  ],
+  "deti": ["дочь", "сын"]
+}

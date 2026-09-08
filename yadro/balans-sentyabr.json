@@ -1,0 +1,17 @@
+{
+  "_": "Баланс на начало сентября 2026 = результат августа. Используется проверочным прогоном mesyac-sentyabr.json.",
+  "imushchestvennye_pai": {
+    "папа": 800.07,
+    "мама": 213.6,
+    "дочь": 48.47,
+    "сын": 38.91
+  },
+  "fondy_ostatki": {
+    "zdravoohranenie": 207.3,
+    "obrazovanie": 8.14,
+    "rezerv": 275.26,
+    "strahovoy": 275.26
+  },
+  "dolg_rezervu": 0.0,
+  "mesyacev_deficita_podryad": 0
+}

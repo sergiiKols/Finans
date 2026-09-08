@@ -1,0 +1,69 @@
+{
+  "_": "СЦЕНАРИЙ: доход только у папы — 2000. Остальное без изменений (ведение хозяйства 600, еда 1000, коммуналка 300, цены детских продуктов прежние).",
+  "uchastniki": [
+    "папа",
+    "мама",
+    "дочь",
+    "сын"
+  ],
+  "vneshnyaya_vyruchka": {
+    "папа": 2000
+  },
+  "lichnye_zatraty": {},
+  "obshchie_zatraty": {
+    "еда": 1000,
+    "коммунальные": 300
+  },
+  "vnutrennie_pokupki": [
+    {
+      "komu": "мама",
+      "chto": "ведение хозяйства: готовка, стирка, порядок",
+      "ot_uchastnika": "папа",
+      "dolya_potrebleniya": 0.3
+    },
+    {
+      "komu": "дочь",
+      "chto": "уборка квартиры, месяц",
+      "ot_uchastnika": "папа",
+      "dolya_potrebleniya": 0.05
+    },
+    {
+      "komu": "сын",
+      "chto": "урожай с дачи",
+      "ot_uchastnika": "папа",
+      "dolya_potrebleniya": 0.075
+    },
+    {
+      "komu": "дочь",
+      "chto": "оценки «5» — 4 шт. (2/3 фонда)",
+      "iz_fonda": "obrazovanie",
+      "dolya_fonda": 0.6667
+    },
+    {
+      "komu": "сын",
+      "chto": "оценки «5» — 2 шт. (1/3 фонда)",
+      "iz_fonda": "obrazovanie",
+      "dolya_fonda": 1.0
+    },
+    {
+      "komu": "мама",
+      "chto": "месяц без болезней в семье",
+      "iz_fonda": "zdravoohranenie",
+      "dolya_fonda": 0.25
+    }
+  ],
+  "deti": [
+    "дочь",
+    "сын"
+  ],
+  "karmany_vhodyashchie": {
+    "одежда и обувь детям": 350
+  },
+  "pokupki_iz_karmanov": [
+    {
+      "karman": "одежда и обувь детям",
+      "chto": "зимняя куртка дочери",
+      "summa": 400
+    }
+  ]
+}

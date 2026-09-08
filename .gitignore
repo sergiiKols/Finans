@@ -1,0 +1,7 @@
+.loop-backup/
+.loop-frozen-*/
+.mimocode/
+*.zip
+__pycache__/
+*.pyc
+*.db

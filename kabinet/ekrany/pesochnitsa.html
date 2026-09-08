@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Семейный учёт — что если</title>
+<style>
+/* Токены — из DESIGN.md проекта. Менять оба места вместе. */
+:root{
+  --page-bg:#faf9f7; --page-fg:#2b3038;
+  --card-bg:#ffffff; --card-fg:#2b3038;
+  --inset-bg:#f2f0ed; --inset-fg:#4e5560;
+  --head-bg:#333944; --head-fg:#f7f6f4;
+  --accent-bg:#1f63c9; --accent-fg:#ffffff;
+  --good:#0c7350; --warn:#7a5c00; --crit:#c33c2c;
+  --border:#e3e0dc; --ring:#1f63c9;
+  --c1:#2a6fd6; --c2:#d9682c; --c3:#12967a; --c4:#c98f16;
+  --r-card:12px; --r-ctl:8px; --r-tag:4px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s6:24px; --s8:32px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --page-bg:#1b1e23; --page-fg:#eceae7;
+    --card-bg:#23272e; --card-fg:#eceae7;
+    --inset-bg:#2a2f36; --inset-fg:#a8aeb8;
+    --head-bg:#0f1216; --head-fg:#f2f0ed;
+    --accent-bg:#5c9bf0; --accent-fg:#10141a;
+    --good:#39b483; --warn:#d3a13a; --crit:#e8705f;
+    --border:#343a42; --ring:#5c9bf0;
+    --c1:#5c9bf0; --c2:#e58b52; --c3:#3fb79a; --c4:#d9ab3f;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--page-bg); color:var(--page-fg);
+  font:400 14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1200px;margin:0 auto;padding:0 var(--s4)}
+@media (min-width:768px){.wrap{padding:0 var(--s6)}}
+
+/* --- шапка --- */
+.top{position:sticky;top:0;z-index:5;background:var(--head-bg);color:var(--head-fg);
+     border-bottom:1px solid var(--border)}
+.top .wrap{display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;
+           padding-top:var(--s3);padding-bottom:var(--s3)}
+h1{font-size:20px;line-height:1.25;font-weight:600;margin:0}
+.top .period{font-size:12px;font-weight:500;color:var(--head-fg);opacity:.75}
+.spacer{flex:1 1 auto}
+.who{font-size:12px;opacity:.75}
+
+/* --- кнопки --- */
+.btn{min-height:44px;padding:0 var(--s4);border-radius:var(--r-ctl);
+     font:600 14px/1 system-ui,sans-serif;cursor:pointer;border:1px solid transparent}
+.btn-main{background:var(--accent-bg);color:var(--accent-fg)}
+.btn-main:hover{filter:brightness(1.08)}
+.btn-main:active{filter:brightness(.92)}
+.btn-ghost{background:transparent;color:var(--head-fg);border-color:var(--border)}
+:where(a,button,summary,[tabindex]):focus-visible,.scroller:focus{
+  outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--r-tag)}
+
+/* --- секции и карточки --- */
+main{padding-bottom:var(--s8)}
+section{margin-top:var(--s6)}
+h2{font-size:15px;line-height:1.3;font-weight:600;margin:0 0 var(--s3)}
+h2 .hint{font-weight:400;font-size:14px;line-height:1.4;color:var(--inset-fg);margin-left:var(--s2)}
+.card{background:var(--card-bg);color:var(--card-fg);border:1px solid var(--border);
+      border-radius:var(--r-card);padding:var(--s4);min-width:0}
+.grid{display:grid;gap:var(--s3)}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.people{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.halves{grid-template-columns:1fr}
+@media (min-width:1024px){.halves{grid-template-columns:3fr 2fr;align-items:start}}
+
+/* --- плитка KPI --- */
+.kpi .lbl{font-size:12px;font-weight:500;color:var(--inset-fg);display:block}
+.kpi .val{font-size:30px;line-height:1.1;font-weight:650;display:block;margin:var(--s2) 0 var(--s1)}
+.kpi .base{font-size:12px;line-height:1.4;color:var(--inset-fg);display:block}
+.unit{font-size:16px;font-weight:500;color:var(--inset-fg)}
+
+/* --- участники --- */
+.person .name{font-weight:600;display:flex;align-items:baseline;gap:var(--s2)}
+.person .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.person .role{font-size:12px;color:var(--inset-fg);font-weight:400}
+.person dl{display:grid;grid-template-columns:1fr auto;gap:var(--s1) var(--s2);margin:var(--s3) 0 0}
+.person dt{font-size:12px;color:var(--inset-fg)}
+.person dd{margin:0;text-align:right;font-weight:500}
+.person dd.big{font-size:16px;font-weight:650}
+
+/* --- таблицы --- */
+.scroller{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px}
+caption{text-align:left;font-size:12px;color:var(--inset-fg);padding-bottom:var(--s2)}
+th,td{padding:var(--s2) var(--s2);border-bottom:1px solid var(--border);text-align:left;
+      vertical-align:top}
+thead th{background:var(--inset-bg);color:var(--inset-fg);font-size:12px;font-weight:500;
+         position:sticky;top:0}
+td.num,th.num{text-align:right;white-space:nowrap}
+tfoot td{border-top:2px solid var(--border);border-bottom:none;font-weight:600}
+tbody tr:last-child td{border-bottom:none}
+
+/* --- мелочи --- */
+.badge{display:inline-block;font-size:12px;padding:1px 6px;border-radius:var(--r-tag);
+       background:var(--inset-bg);color:var(--inset-fg)}
+.good{color:var(--good)} .warn{color:var(--warn)} .crit{color:var(--crit)}
+.muted{color:var(--inset-fg)}
+details{margin-top:var(--s3)}
+summary{cursor:pointer;font-size:14px;font-weight:500;min-height:44px;display:flex;
+        align-items:center;gap:var(--s2)}
+details[open] .chev{transform:rotate(90deg)}
+.chev{display:inline-block;transition:transform 160ms var(--ease-out)}
+@media (prefers-reduced-motion:reduce){.chev{transition:none}}
+.legend{display:flex;flex-wrap:wrap;gap:var(--s3);margin-top:var(--s2);font-size:12px;
+        color:var(--inset-fg)}
+.legend span{display:flex;align-items:center;gap:var(--s1)}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+.note{font-size:14px;color:var(--inset-fg);line-height:1.5;max-width:68ch}
+footer{margin-top:var(--s8);padding-top:var(--s4);border-top:1px solid var(--border)}
+
+/* --- навигация (во втором блоке <style> дашборда, берём явно) --- */
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;
+       border-radius:var(--r-tag);color:var(--head-fg);text-decoration:none;font-weight:500}
+.nav a:hover{box-shadow:inset 0 -2px 0 currentColor}
+.nav a[aria-current="page"]{font-weight:700;box-shadow:inset 0 -3px 0 currentColor}
+
+/* --- песочница --- */
+.stanok{display:grid;gap:var(--s6);grid-template-columns:1fr}
+.stanok>*{min-width:0}
+@media (min-width:1024px){.stanok{grid-template-columns:minmax(0,5fr) minmax(0,4fr);
+                                  align-items:start}
+  .stanok .itogi{position:sticky;top:76px}}
+
+.ruchka{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s1) var(--s3);
+        align-items:center;padding:var(--s3) 0;border-bottom:1px solid var(--border)}
+.ruchka>*{min-width:0;max-width:100%}
+.ruchka:last-child{border-bottom:none}
+.ruchka .imya{font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.ruchka .zachem{font-size:14px;color:var(--inset-fg);grid-column:1/-1;margin-top:-2px}
+.ruchka input[type=number]{width:120px;min-height:44px;text-align:right;
+    font:600 15px/1 system-ui,sans-serif;font-variant-numeric:tabular-nums;
+    padding:0 var(--s2);border:1px solid var(--border);border-radius:var(--r-ctl);
+    background:var(--card-bg);color:var(--card-fg)}
+.ruchka input[type=range]{grid-column:1/-1;width:100%;margin:0;min-height:44px;
+    accent-color:var(--accent-bg)}
+.ruchka select{grid-column:1/-1;min-height:44px;width:100%;min-width:0;
+    text-overflow:ellipsis;padding:0 var(--s2);
+    border:1px solid var(--border);border-radius:var(--r-ctl);
+    background:var(--card-bg);color:var(--card-fg);font:400 15px/1 system-ui,sans-serif}
+
+.koltso-box{display:grid;gap:var(--s4);grid-template-columns:1fr}
+@media (min-width:480px){.koltso-box{grid-template-columns:auto 1fr;align-items:center}}
+.koltso{width:196px;height:196px;margin:0 auto;position:relative}
+.koltso svg{width:100%;height:100%;display:block;transform:rotate(-90deg)}
+.koltso .centr{position:absolute;inset:22%;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;pointer-events:none}
+.koltso .centr b{font-size:17px;line-height:1.15;font-weight:650;overflow-wrap:anywhere}
+.koltso .centr span{font-size:11px;line-height:1.25;color:var(--inset-fg);margin-top:3px}
+.doli{list-style:none;margin:0;padding:0}
+.doli li{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s1) var(--s3);
+         padding:var(--s2) 0;border-bottom:1px solid var(--border)}
+.doli li:last-child{border-bottom:none}
+.doli .sw{width:12px;height:12px;border-radius:3px;align-self:center}
+.doli .n{font-size:14px;min-width:0;flex:1 1 100%;overflow-wrap:anywhere;
+         display:flex;align-items:center;gap:var(--s2)}
+.doli .r{font-weight:650;white-space:nowrap}
+.doli .p{font-size:14px;color:var(--inset-fg);white-space:nowrap;text-align:right;
+         margin-left:auto}
+
+.status{border-left:4px solid var(--border);padding-left:var(--s4)}
+.status.ur-crit{border-left-color:var(--crit)}
+.status.ur-warn{border-left-color:var(--warn)}
+.status.ur-good{border-left-color:var(--good)}
+.status .zag{font-size:17px;line-height:1.3;font-weight:650;margin:0 0 var(--s2)}
+.status .zag.crit{color:var(--crit)} .status .zag.warn{color:var(--warn)}
+.status .zag.good{color:var(--good)}
+
+.knopki{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s3)}
+.knopki .btn{display:inline-flex;align-items:center}
+.sostoyanie-scheta{font-size:14px;color:var(--inset-fg);align-self:center}
+.sostoyanie-scheta.zhdet-nazhatiya{color:var(--warn);font-weight:600}
+/* Ручек много, они длиннее экрана: кнопка наверху уезжает из виду ровно тогда,
+   когда нужна. Полоса всплывает внизу, пока есть непосчитанные изменения. */
+.plavayushchaya{position:fixed;left:0;right:0;bottom:0;z-index:20;display:none;
+  gap:var(--s3);align-items:center;justify-content:center;
+  padding:var(--s3) var(--s4);background:var(--card-bg);
+  border-top:1px solid var(--border);box-shadow:0 -6px 20px rgba(0,0,0,.10)}
+.plavayushchaya.vidna{display:flex}
+.plavayushchaya .poyas{font-size:14px;color:var(--inset-fg)}
+body.s-polosoy{padding-bottom:84px}
+.btn-tihiy{background:var(--inset-bg);color:var(--inset-fg);border-color:var(--border)}
+td.vybr,th.vybr{background:var(--inset-bg)}
+/* На телефоне ползунки и кольца не помещаются в один экран: крутишь внизу,
+   а результат наверху. Держим главное число на виду лентой под шапкой и
+   поднимаем итоги над ручками. */
+.lenta{position:sticky;top:0;z-index:6;background:var(--inset-bg);color:var(--inset-fg);
+       border-bottom:1px solid var(--border)}
+.lenta .wrap{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s4);align-items:baseline;
+             padding-top:var(--s2);padding-bottom:var(--s2)}
+.lenta b{color:var(--page-fg);font-weight:650}
+.lenta .tochka{width:9px;height:9px;border-radius:50%;display:inline-block;
+               background:var(--good);margin-right:var(--s1)}
+.lenta .tochka.crit{background:var(--crit)} .lenta .tochka.warn{background:var(--warn)}
+@media (min-width:1024px){.lenta{display:none}}
+/* Шапка и лента обе липли к top:0 и наезжали друг на друга. На телефоне
+   прилипает лента — она нужнее: шапку можно проскроллить, а число нет. */
+@media (max-width:1023.98px){.top{position:static}.stanok .itogi{order:-1}}
+
+.mig{transition:opacity 160ms var(--ease-out)}
+.mig.zhdet{opacity:.45}
+@media (prefers-reduced-motion:reduce){.mig{transition:none}}
+</style>
+<script>
+/* Кабинет открывается двумя путями: прямо (localhost:8090 дома, 8772 на
+   сервере) и через дашборд по адресу /uchet — тогда прокси кладёт сюда
+   window.PREFIX. Все ссылки и запросы строятся от PRE, поэтому оба пути живут
+   без правок в коде экранов. */
+const PRE = window.PREFIX || "";
+addEventListener("DOMContentLoaded", () => { if(!PRE) return;
+  document.querySelectorAll('a[href^="/"]').forEach(a =>
+    a.setAttribute("href", PRE + a.getAttribute("href")));
+});
+</script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <h1>Что если</h1>
+    <span class="period">песочница модели</span>
+    <span class="spacer"></span>
+    <nav class="nav" aria-label="Разделы кабинета" data-region="nav"></nav>
+  </div>
+</header>
+
+<div class="lenta" data-region="lenta">
+  <div class="wrap">
+    <span><i class="tochka" data-key="lenta-tochka"></i><b data-field="lenta-status">—</b></span>
+    <span>накопление <b data-field="lenta-nak">—</b></span>
+    <span>норма <b data-field="lenta-norma">—</b></span>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <section data-region="zachem" aria-labelledby="h-zachem">
+    <h2 id="h-zachem">Зачем это <span class="hint">крутить числа, ничего не портя</span></h2>
+    <div class="card">
+      <p class="note" style="margin:0">
+        Здесь можно поставить любой доход, любые дела детей и любые траты и увидеть,
+        что получится. Считает <b>то же самое ядро</b>, что и настоящий месяц, по тем же
+        нормативам. <b>В журнал не записывается ничего</b> — закроете вкладку, и следа
+        не останется. Числа при открытии взяты из настоящего месяца, чтобы было видно,
+        какое именно изменение что сдвинуло.
+      </p>
+      <div class="knopki">
+        <button type="button" class="btn btn-main" data-key="schitat">Пересчитать</button>
+        <button type="button" class="btn btn-tihiy" data-key="sbros">Вернуть настоящий месяц</button>
+        <button type="button" class="btn btn-tihiy" data-key="obnulit">Обнулить всё</button>
+        <span class="sostoyanie-scheta" data-field="svezhest" role="status">—</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="plavayushchaya" data-region="pereschet">
+    <span class="poyas">числа изменились</span>
+    <button type="button" class="btn btn-main" data-key="schitat-nizhniy">Пересчитать</button>
+  </div>
+
+  <div class="stanok">
+
+    <!-- ЛЕВО: ручки -->
+    <div>
+      <section data-region="dohody" aria-labelledby="h-doh">
+        <h2 id="h-doh">Деньги извне <span class="hint">зарплата и подработка</span></h2>
+        <div class="card" data-list="dohody"></div>
+      </section>
+
+      <section data-region="dela" aria-labelledby="h-dela">
+        <h2 id="h-dela">Дела по дому <span class="hint">сколько семья платит своим</span></h2>
+        <div class="card" data-list="dela"></div>
+      </section>
+
+      <section data-region="traty" aria-labelledby="h-traty">
+        <h2 id="h-traty">Обязательные траты <span class="hint">из них складывается прожиточный минимум</span></h2>
+        <div class="card" data-list="traty"></div>
+      </section>
+
+      <section data-region="pravila" aria-labelledby="h-prav">
+        <h2 id="h-prav">Правила <span class="hint">то, что решает владелец</span></h2>
+        <div class="card" data-list="pravila"></div>
+      </section>
+    </div>
+
+    <!-- ПРАВО: что получилось -->
+    <div class="itogi">
+      <section data-region="glavnoe-delenie" aria-labelledby="h-glav">
+        <h2 id="h-glav">Накопление и потребление
+          <span class="hint">главное деление по Чартаеву</span></h2>
+        <div class="card mig" data-key="glav-karta">
+          <div class="koltso-box" data-block="chart">
+            <div class="koltso">
+              <svg viewBox="0 0 42 42" role="img" data-key="koltso-glav"
+                   aria-label="Вся выручка семьи делится на фонд накопления и фонд потребления"></svg>
+              <div class="centr"><b data-field="glav-vsego">—</b><span>вся выручка</span></div>
+            </div>
+            <ul class="doli" data-list="doli-glav"></ul>
+          </div>
+          <p class="note" style="margin:var(--s3) 0 0" data-field="glav-note">—</p>
+          <details data-block="disclosure" data-key="sub-detali">
+            <summary><span class="chev">&#8250;</span>Из чего сложился фонд накопления</summary>
+            <div class="scroller" data-block="table">
+              <table data-key="sub-tabl">
+                <caption>Семь именных субсчетов. Норматив — доля от выручки участника.</caption>
+                <thead><tr><th scope="col">Субсчёт</th><th scope="col" class="num">Норматив</th>
+                  <th scope="col" class="num">Сумма</th></tr></thead>
+                <tbody></tbody><tfoot></tfoot>
+              </table>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section data-region="raspredelenie" aria-labelledby="h-krug">
+        <h2 id="h-krug">Куда ушёл доход извне <span class="hint">только реальные деньги</span></h2>
+        <div class="card mig" data-key="krug-karta">
+          <div class="koltso-box" data-block="chart">
+            <div class="koltso">
+              <svg viewBox="0 0 42 42" role="img" data-key="koltso"
+                   aria-label="Распределение дохода извне по долям"></svg>
+              <div class="centr"><b data-field="krug-vsego">—</b><span>извне</span></div>
+            </div>
+            <ul class="doli" data-list="doli"></ul>
+          </div>
+          <p class="note" style="margin:var(--s3) 0 0" data-field="krug-note">—</p>
+        </div>
+      </section>
+
+      <section data-region="sostoyanie" aria-labelledby="h-sost">
+        <h2 id="h-sost">Что это значит</h2>
+        <div class="card status mig" data-key="status">
+          <p class="zag" data-field="status-zag">—</p>
+          <p class="note" style="margin:0" data-field="status-text">—</p>
+        </div>
+      </section>
+
+      <section data-region="lyudi" aria-labelledby="h-lyudi">
+        <h2 id="h-lyudi">Каждому <span class="hint">при этих числах и этом правиле</span></h2>
+        <div class="card mig" data-key="lyudi-karta">
+          <div class="scroller" tabindex="0" data-block="table">
+            <table data-key="lyudi-tabl">
+              <caption>«На руки» — свободные деньги участника после его доли затрат и накопления.</caption>
+              <thead><tr><th scope="col">Кто</th><th scope="col" class="num">Выручка</th>
+                <th scope="col" class="num">Его затраты</th><th scope="col" class="num">На руки</th>
+                <th scope="col" class="num">Пай</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <section data-region="sravnenie" aria-labelledby="h-sravn">
+    <h2 id="h-sravn">Пять правил на этих же числах <span class="hint">чем закрывается открытый вопрос Р-4</span></h2>
+    <div class="card mig" data-key="sravn-karta">
+      <div class="scroller" tabindex="0" data-block="table">
+        <table data-key="sravn-tabl">
+          <caption>Одни и те же деньги, разное правило деления общих затрат. Выбранное правило подсвечено.</caption>
+          <thead><tr><th scope="col">Правило</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="note" style="margin:var(--s3) 0 0">
+        Это не вопрос вкуса и не вопрос программы: правило выбирает владелец, а кабинет
+        показывает цену каждого выбора. Выбранное здесь на настоящий расчёт не влияет —
+        чтобы применить, его надо записать в <code>yadro/parametry.json</code> и в журнал решений.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <p class="note">Считает ядро <code>yadro/raschet.py</code> — то же, что и настоящий месяц.
+  Песочница ничего не записывает в базу.</p>
+</footer>
+
+<script>
+"use strict";
+const el=(t,c,x)=>{const n=document.createElement(t); if(c)n.className=c;
+  if(x!==undefined&&x!==null)n.textContent=x; return n};
+const money=v=>(v===null||v===undefined||isNaN(v))?"—":
+  Number(v).toLocaleString("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=v=>(isNaN(v)?"—":(v*100).toLocaleString("ru-RU",{maximumFractionDigits:1})+" %");
+const set=(f,t)=>{const n=document.querySelector('[data-field="'+f+'"]'); if(n)n.textContent=t};
+const slot=i=>getComputedStyle(document.documentElement)
+  .getPropertyValue("--c"+(((i-1)%4)+1)).trim();
+const NAV=[["/","Сегодня"],["/vvod","Записать"],["/plan","План"],["/mesyac","Месяц"],
+           ["/chto-esli","Что если"],["/scheta","Счета"],["/sostav","Состав"]];
+
+let ZAGOTOVKA=null, SOSTOYANIE=null;
+
+function navigaciya(){
+  const box=document.querySelector('[data-region="nav"]');
+  NAV.forEach(([h,t])=>{const a=el("a",null,t); a.href=PRE+h;
+    if(h==="/chto-esli") a.setAttribute("aria-current","page"); box.append(a)});
+}
+
+/* --- ручка: подпись, число и ползунок в паре --- */
+function ruchka(roditel, opis){
+  const {imya, zachem, znach, max, shag, id} = opis;
+  const w=el("div","ruchka");
+  const l=el("label","imya",imya); l.htmlFor=id; w.append(l);
+  const chislo=el("input"); chislo.type="number"; chislo.id=id; chislo.min="0";
+  chislo.step=String(shag); chislo.value=String(znach);
+  chislo.setAttribute("aria-label", imya+", рублей");
+  w.append(chislo);
+  if(zachem) w.append(el("div","zachem",zachem));
+  const polz=el("input"); polz.type="range"; polz.min="0"; polz.max=String(max);
+  polz.step=String(shag); polz.value=String(Math.min(znach,max));
+  polz.setAttribute("aria-label", imya+", ползунок");
+  w.append(polz);
+  const svyaz=(ot,k)=>{ot.addEventListener("input",()=>{
+    if(k) k.value = (ot===polz) ? ot.value : String(Math.min(Number(ot.value||0),Number(polz.max)));
+    pomecheno();
+  })};
+  chislo.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); peresschitat(); }});
+  svyaz(polz,chislo); svyaz(chislo,polz);
+  roditel.append(w);
+  return ()=>Number(chislo.value||0);
+}
+
+/* --- сборка формы из заготовки --- */
+let CHITALKI={dohody:{}, dela:{}, traty:{}, karmany:{}, pravilo:null, norma:null};
+
+function sobratFormu(z){
+  const bD=document.querySelector('[data-list="dohody"]'),
+        bR=document.querySelector('[data-list="dela"]'),
+        bT=document.querySelector('[data-list="traty"]'),
+        bP=document.querySelector('[data-list="pravila"]');
+  bD.innerHTML=""; bR.innerHTML=""; bT.innerHTML=""; bP.innerHTML="";
+  CHITALKI={dohody:{}, dela:{}, traty:{}, karmany:{}, pravilo:null, norma:null};
+
+  z.lyudi.forEach((p,i)=>{
+    const rol=p.rebenok?"ребёнок":(p.otdelno?"взрослый, живёт отдельно":"взрослый");
+    CHITALKI.dohody[p.imya]=ruchka(bD,{imya:p.imya+" — зарплата и подработка",
+      zachem:rol+". Деньги, пришедшие в семью снаружи",
+      znach:p.vneshnyaya, max:20000, shag:100, id:"d-"+i});
+    CHITALKI.dela[p.imya]=ruchka(bR,{imya:p.imya+" — оплата внутри семьи",
+      zachem:(p.chto||"работа по дому, урожай, оценки")+
+        ". По модели это такая же выручка, как зарплата",
+      znach:p.vnutri, max:5000, shag:50, id:"r-"+i});
+  });
+
+  Object.entries(z.zatraty).forEach(([k,v],i)=>{
+    CHITALKI.traty[k]=ruchka(bT,{imya:k, zachem:"обязательная трата месяца",
+      znach:v, max:10000, shag:50, id:"t-"+i});
+  });
+  Object.entries(z.karmany).forEach(([k,v],i)=>{
+    CHITALKI.karmany[k]=ruchka(bT,{imya:k+" (карман)",
+      zachem:"откладывается каждый месяц на нерегулярную обязательную трату",
+      znach:v, max:2000, shag:50, id:"k-"+i});
+  });
+
+  // правило деления общих затрат
+  const wp=el("div","ruchka");
+  const lp=el("label","imya","Общие затраты делятся"); lp.htmlFor="pravilo";
+  wp.append(lp, el("span"));
+  const poyas=el("div","zachem","—"); wp.append(poyas);
+  const sel=el("select"); sel.id="pravilo";
+  z.pravila.forEach(p=>{const o=el("option",null,p.imya); o.value=p.klyuch;
+    if(p.klyuch===z.pravilo) o.selected=true; sel.append(o)});
+  const obnovitPoyas=()=>{const n=z.pravila.find(p=>p.klyuch===sel.value);
+    poyas.textContent=n?n.poyasnenie:""};
+  sel.addEventListener("change",()=>{obnovitPoyas(); pomecheno()});
+  obnovitPoyas();
+  wp.append(sel); bP.append(wp);
+  CHITALKI.pravilo=()=>sel.value;
+
+  // полная норма накопления
+  const chit=ruchka(bP,{imya:"Полная норма накопления, %",
+    zachem:"верхняя ступень шкалы: какую долю выручки семья откладывает на богатом месяце",
+    znach:Math.round((z.norma_polnaya||0.5)*100), max:100, shag:5, id:"norma"});
+  CHITALKI.norma=()=>chit()/100;
+}
+
+function sobratZapros(){
+  const vneshnyaya={}, vnutrennie=[], zatraty={}, karmany={};
+  Object.entries(CHITALKI.dohody).forEach(([k,f])=>{const v=f(); if(v) vneshnyaya[k]=v});
+  Object.entries(CHITALKI.dela).forEach(([k,f])=>{const v=f();
+    if(v) vnutrennie.push({komu:k, chto:"работа по дому", summa:v})});
+  Object.entries(CHITALKI.traty).forEach(([k,f])=>{const v=f(); if(v) zatraty[k]=v});
+  Object.entries(CHITALKI.karmany).forEach(([k,f])=>{const v=f(); if(v) karmany[k]=v});
+  return {vneshnyaya, vnutrennie, zatraty, karmany,
+          pravilo: CHITALKI.pravilo(), norma_polnaya: CHITALKI.norma()};
+}
+
+/* --- кольцо: одна функция на оба графика --- */
+function narisovatKoltso(klyuchSvg, klyuchSpiska, doli, baza, centrChislo, karta){
+  const sv=document.querySelector('[data-key="'+klyuchSvg+'"]');
+  const spisok=document.querySelector('[data-list="'+klyuchSpiska+'"]');
+  sv.innerHTML=""; spisok.innerHTML="";
+  const NS="http://www.w3.org/2000/svg", R=15.9155;
+  // Отрицательная доля в круг не кладётся: круг — это доли целого, а не баланс.
+  const vidimye=doli.filter(x=>x.v>0.005);
+  const summa=vidimye.reduce((a,x)=>a+x.v,0)||1;
+  const ZAZOR = vidimye.length>1 ? 1.2 : 0;      // зазор фоном между долями
+  const krug=(stroke,dash,offset)=>{
+    const c=document.createElementNS(NS,"circle");
+    c.setAttribute("cx","21"); c.setAttribute("cy","21"); c.setAttribute("r",String(R));
+    c.setAttribute("fill","none"); c.setAttribute("stroke",stroke);
+    c.setAttribute("stroke-width","5.5");
+    if(dash){ c.setAttribute("stroke-dasharray",dash);
+              c.setAttribute("stroke-dashoffset",String(offset)) }
+    sv.append(c); return c;
+  };
+  krug(getComputedStyle(document.documentElement).getPropertyValue("--inset-bg").trim());
+  let smeshchenie=25;                              // старт сверху: svg повёрнут на -90°
+  vidimye.forEach(x=>{
+    const dlina=Math.max(0, x.v/summa*100 - ZAZOR);
+    krug(slot(x.s), dlina.toFixed(3)+" "+(100-dlina).toFixed(3), smeshchenie);
+    smeshchenie -= x.v/summa*100;
+  });
+  set(centrChislo.pole, money(centrChislo.znach)+" ₽");
+  // Подписи обязательны: одна из четырёх красок контракта не добирает 3:1 к фону,
+  // и правило требует видимых подписей либо таблицы. Здесь есть и то и другое.
+  doli.forEach(x=>{
+    const li=el("li");
+    const sw=el("i","sw"); sw.style.background=slot(x.s);
+    const imya=el("span","n"); imya.append(sw, document.createTextNode(x.n));
+    li.append(imya,
+              el("span","r",money(x.v)+" ₽"),
+              el("span","p", x.v>0 ? pct(x.v/(baza||1)) : "—"));
+    spisok.append(li);
+  });
+  return doli.filter(x=>x.v<-0.005);
+}
+
+/* Главное деление: вся выручка = фонд накопления + фонд потребления.
+   Это и есть система Чартаева, поэтому кольцо стоит первым и оно же — крупнее. */
+function koltsoGlavnoe(d){
+  const doli=[{n:"Фонд накопления", v:d.nakoplenie_fond, s:3},
+              {n:"Фонд потребления", v:d.potreblenie_fond, s:1}];
+  narisovatKoltso("koltso-glav","doli-glav",doli,d.vyruchka_vsego,
+    {pole:"glav-vsego", znach:d.vyruchka_vsego});
+  set("glav-note","Норма накопления "+pct(d.norma)+" — столько семья откладывает "+
+    "с каждого рубля выручки, остальное идёт на потребление. Во всю выручку "+
+    money(d.vyruchka_vsego)+" ₽ входит внутренний оборот "+
+    money(d.vnutrenniy_oborot)+" ₽: семья платит сама себе за домашний труд. "+
+    "Богатство семьи это не увеличивает, но выручку участников — да, и норма "+
+    "берётся с неё.");
+  const tb=document.querySelector('[data-key="sub-tabl"] tbody'),
+        tf=document.querySelector('[data-key="sub-tabl"] tfoot');
+  tb.innerHTML=""; tf.innerHTML="";
+  (d.subscheta||[]).forEach(f=>{
+    const tr=el("tr"); const th=el("th",null,f.name); th.scope="row";
+    tr.append(th, el("td","num",pct(f.dolya)), el("td","num",money(f.summa)));
+    tb.append(tr);
+  });
+  const sum=(d.subscheta||[]).reduce((a,f)=>a+f.summa,0);
+  const tr=el("tr");
+  tr.append(el("td",null,"Итого фонд накопления"), el("td","num",pct(d.norma)),
+            el("td","num",money(d.nakoplenie_fond)));
+  tf.append(tr);
+  const raz=sum-d.nakoplenie_fond;
+  if(Math.abs(raz)>0.005){
+    const p=el("tr");
+    // Копейка — это округление. Всё, что больше, — расхождение, и называть его
+    // округлением нельзя: так разрыв в тысячи рублей выглядел безобидным.
+    const td=el("td","num", Math.abs(raz)<=0.05
+      ? "Строки дают "+money(sum)+" ₽: округление до копейки."
+      : "⚠ Строки дают "+money(sum)+" ₽, итог "+money(d.nakoplenie_fond)
+        +" ₽ — расхождение "+money(raz)+" ₽. Это ошибка расчёта, а не округление.");
+    td.colSpan=3; p.append(td); tf.append(p);
+  }
+}
+
+/* Второе кольцо: те же деньги, но только пришедшие снаружи. */
+function koltso(d){
+  const doli=[{n:"На руки участникам", v:d.lichnyy_dohod, s:1},
+              {n:"Обязательные затраты", v:d.zatraty, s:2},
+              {n:"Имущественные паи", v:d.prirost_paev, s:3},
+              {n:"Осталось в фондах", v:d.ostatok_fondov, s:4}];
+  const otr=narisovatKoltso("koltso","doli",doli,d.vneshniy_dohod,
+    {pole:"krug-vsego", znach:d.vneshniy_dohod});
+  const summa=doli.reduce((a,x)=>a+x.v,0), raz=d.vneshniy_dohod-summa;
+  set("krug-note","Доли реальных денег, пришедших в семью снаружи: "+
+    money(d.vneshniy_dohod)+" ₽." +
+    (otr.length ? " В круг не попало: "+otr.map(x=>x.n.toLowerCase()+" "+money(x.v)+" ₽")
+      .join(", ")+" — отрицательная доля не рисуется, смотрите таблицу ниже."
+     : (Math.abs(raz)>0.02
+        ? " Разошлось "+money(summa)+" ₽, расхождение "+money(raz)+" ₽."
+        : " Сумма долей равна притоку, расхождение "+money(Math.abs(raz))+
+          " ₽ — округление до копейки.")));
+}
+
+function sostoyanie(itog){
+  const def=itog.deficit_blok||{}, box=document.querySelector('[data-key="status"]');
+  let ur="good", zag="", txt="";
+  if((def.nepokryto||0)>0.005){
+    ur="crit"; zag="Не окупает обязательное: не хватает "+money(def.deficit)+" ₽";
+    txt="Из них "+money(def.nepokryto)+" ₽ не покрыто ничем. Норма накопления при этих "+
+      "числах "+pct(itog.norma)+", прожиточный минимум "+money(itog.prozhitochnyy_minimum)+" ₽.";
+  } else if((def.dolg||0)>0.005){
+    ur="warn"; zag="Обязательное закрыто, остался долг фондам "+money(def.dolg)+" ₽";
+    txt="Норма накопления "+pct(itog.norma)+", прожиточный минимум "+
+      money(itog.prozhitochnyy_minimum)+" ₽.";
+  } else {
+    ur="good"; zag="Месяц окупает обязательное";
+    txt="Норма накопления "+pct(itog.norma)+", в накопление уходит "+
+      money(itog.nakoplenie_vsego)+" ₽. Прожиточный минимум "+
+      money(itog.prozhitochnyy_minimum)+" ₽.";
+  }
+  box.className="card status mig ur-"+ur;
+  const z=document.querySelector('[data-field="status-zag"]');
+  z.className="zag "+ur; z.textContent=zag;
+  set("status-text", txt);
+  // та же правда короткой строкой — она видна, пока крутишь ползунки на телефоне
+  document.querySelector('[data-key="lenta-tochka"]').className="tochka "+ur;
+  set("lenta-status", ur==="crit" ? "не окупает" : (ur==="warn" ? "долг фондам" : "окупает"));
+  set("lenta-nak", money(itog.nakoplenie_fond)+" ₽");
+  set("lenta-norma", pct(itog.norma));
+}
+
+function lyudi(itog){
+  const tb=document.querySelector('[data-key="lyudi-tabl"] tbody'); tb.innerHTML="";
+  itog.people.forEach(p=>{
+    const tr=el("tr"); const th=el("th",null,p.name); th.scope="row";
+    const nr=el("td","num",money(p.na_ruki)+" ₽");
+    if(p.na_ruki<0) nr.classList.add("crit");
+    tr.append(th, el("td","num",money(p.vyruchka)), el("td","num",money(p.zatraty)),
+              nr, el("td","num",money(p.pay)));
+    tb.append(tr);
+  });
+}
+
+function sravnenie(d){
+  const t=document.querySelector('[data-key="sravn-tabl"]');
+  const thead=t.querySelector("thead"), tb=t.querySelector("tbody");
+  const obraz=(d.sravnenie.find(r=>r.ok)||{}).na_ruki||[];
+  thead.innerHTML=""; tb.innerHTML="";
+  const hr=el("tr"); hr.append(Object.assign(el("th",null,"Правило"),{scope:"col"}));
+  obraz.forEach(p=>{const th=el("th","num",p.name); th.scope="col"; hr.append(th)});
+  const thd=el("th","num","Дыра"); thd.scope="col"; hr.append(thd);
+  thead.append(hr);
+  d.sravnenie.forEach(r=>{
+    const tr=el("tr");
+    const th=el("th",null,r.imya); th.scope="row";
+    if(r.klyuch===d.pravilo) th.classList.add("vybr");
+    tr.append(th);
+    if(!r.ok){
+      const td=el("td","num",r.err||"не считается");
+      td.colSpan=obraz.length+1; tr.append(td); tb.append(tr); return;
+    }
+    r.na_ruki.forEach(p=>{
+      const td=el("td","num",money(p.na_ruki));
+      if(p.na_ruki<0) td.classList.add("crit");
+      if(r.klyuch===d.pravilo) td.classList.add("vybr");
+      tr.append(td);
+    });
+    const td=el("td","num", r.deficit>0.005?money(r.deficit):"—");
+    if(r.deficit>0.005) td.classList.add("crit");
+    if(r.klyuch===d.pravilo) td.classList.add("vybr");
+    tr.append(td);
+    tb.append(tr);
+  });
+}
+
+function fokusVRaskrytii(){
+  document.querySelectorAll("details").forEach(d=>{
+    const sc=d.querySelector(".scroller"); if(!sc) return;
+    const obnovit=()=>{ if(d.open) sc.setAttribute("tabindex","0");
+                        else sc.removeAttribute("tabindex") };
+    d.addEventListener("toggle", obnovit); obnovit();
+  });
+}
+
+function oshibka(txt){
+  set("krug-note", txt);
+  const z=document.querySelector('[data-field="status-zag"]');
+  z.className="zag warn"; z.textContent="Посчитать не вышло";
+  set("status-text", txt);
+  document.querySelector('[data-key="status"]').className="card status mig ur-warn";
+}
+
+function zhdem(da){
+  document.querySelectorAll(".mig").forEach(n=>n.classList.toggle("zhdet",da));
+}
+
+/* Пересчёт запускается нажатием, а не каждым движением ползунка.
+
+   Было: debounce 180 мс и запрос на любое изменение. При работе через туннель
+   быстрое перетаскивание ползунка давало очередь запросов, каждый со своим
+   TCP-соединением, и вкладка «падала» — числа переставали обновляться.
+   Стало: движения меняют только форму, счёт идёт по кнопке «Пересчитать»
+   (или по Enter в поле). Незавершённый запрос отменяется при новом. */
+let idet = null;   // AbortController текущего запроса
+
+function polosa(vidna){
+  const pl = document.querySelector('[data-region="pereschet"]');
+  if(pl) pl.classList.toggle("vidna", vidna);
+  document.body.classList.toggle("s-polosoy", vidna);
+}
+
+function pomecheno(){
+  const z = document.querySelector('[data-field="svezhest"]');
+  if(z){ z.textContent = "числа изменились — нажмите «Пересчитать»";
+         z.classList.add("zhdet-nazhatiya"); }
+  polosa(true);
+}
+
+function svezho(){
+  const z = document.querySelector('[data-field="svezhest"]');
+  if(z){ z.textContent = "показан расчёт по текущим числам";
+         z.classList.remove("zhdet-nazhatiya"); }
+  polosa(false);
+}
+
+async function peresschitat(){
+  if(idet) idet.abort();
+  const svoy = idet = new AbortController();
+  zhdem(true);
+  let d;
+  try{
+    d = await (await fetch(PRE+"/api/chto-esli",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(sobratZapros()), signal: svoy.signal})).json();
+  }catch(e){
+    if(e.name === "AbortError") return;          // его сменил следующий запрос
+    d = {ok:false, err:"кабинет не отвечает"};
+  }
+  if(svoy !== idet) return;                      // ответ опоздал, есть свежее
+  idet = null;
+  zhdem(false);
+  if(!d.ok || !d.itog){ oshibka(d.err||"нет ответа"); if(d.sravnenie) sravnenie(d); return; }
+  koltsoGlavnoe(d.itog); koltso(d.itog); sostoyanie(d.itog); lyudi(d.itog); sravnenie(d);
+  svezho();
+}
+
+async function nachalo(){
+  navigaciya();
+  try{ ZAGOTOVKA = await (await fetch(PRE+"/api/chto-esli/zagotovka")).json(); }
+  catch(e){ ZAGOTOVKA={ok:false, err:"кабинет не отвечает"} }
+  if(!ZAGOTOVKA.ok || !ZAGOTOVKA.lyudi || !ZAGOTOVKA.lyudi.length){
+    oshibka((ZAGOTOVKA.err||"нет состава семьи")+" — заведите состав в разделе «Состав»");
+    return;
+  }
+  sobratFormu(ZAGOTOVKA);
+  fokusVRaskrytii();
+  peresschitat();
+  document.querySelector('[data-key="schitat"]').addEventListener("click", peresschitat);
+  document.querySelector('[data-key="schitat-nizhniy"]').addEventListener("click", peresschitat);
+  document.querySelector('[data-key="sbros"]').addEventListener("click",()=>{
+    sobratFormu(ZAGOTOVKA); peresschitat();
+  });
+  document.querySelector('[data-key="obnulit"]').addEventListener("click",()=>{
+    const pusto=JSON.parse(JSON.stringify(ZAGOTOVKA));
+    pusto.lyudi.forEach(p=>{p.vneshnyaya=0; p.vnutri=0});
+    Object.keys(pusto.zatraty).forEach(k=>pusto.zatraty[k]=0);
+    Object.keys(pusto.karmany).forEach(k=>pusto.karmany[k]=0);
+    sobratFormu(pusto); peresschitat();
+  });
+}
+nachalo();
+</script>
+</body>
+</html>

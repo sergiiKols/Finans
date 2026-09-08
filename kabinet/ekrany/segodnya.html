@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Семейный учёт — сегодня</title>
+<style>
+/* Токены — из DESIGN.md проекта. Менять оба места вместе. */
+:root{
+  --page-bg:#faf9f7; --page-fg:#2b3038;
+  --card-bg:#ffffff; --card-fg:#2b3038;
+  --inset-bg:#f2f0ed; --inset-fg:#4e5560;
+  --head-bg:#333944; --head-fg:#f7f6f4;
+  --accent-bg:#1f63c9; --accent-fg:#ffffff;
+  --good:#0c7350; --warn:#7a5c00; --crit:#c33c2c;
+  --border:#e3e0dc; --ring:#1f63c9;
+  --c1:#2a6fd6; --c2:#d9682c; --c3:#12967a; --c4:#c98f16;
+  --r-card:12px; --r-ctl:8px; --r-tag:4px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s6:24px; --s8:32px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --page-bg:#1b1e23; --page-fg:#eceae7;
+    --card-bg:#23272e; --card-fg:#eceae7;
+    --inset-bg:#2a2f36; --inset-fg:#a8aeb8;
+    --head-bg:#0f1216; --head-fg:#f2f0ed;
+    --accent-bg:#5c9bf0; --accent-fg:#10141a;
+    --good:#39b483; --warn:#d3a13a; --crit:#e8705f;
+    --border:#343a42; --ring:#5c9bf0;
+    --c1:#5c9bf0; --c2:#e58b52; --c3:#3fb79a; --c4:#d9ab3f;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--page-bg); color:var(--page-fg);
+  font:400 14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1200px;margin:0 auto;padding:0 var(--s4)}
+@media (min-width:768px){.wrap{padding:0 var(--s6)}}
+
+/* --- шапка --- */
+.top{position:sticky;top:0;z-index:5;background:var(--head-bg);color:var(--head-fg);
+     border-bottom:1px solid var(--border)}
+.top .wrap{display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;
+           padding-top:var(--s3);padding-bottom:var(--s3)}
+h1{font-size:20px;line-height:1.25;font-weight:600;margin:0}
+.top .period{font-size:12px;font-weight:500;color:var(--head-fg);opacity:.75}
+.spacer{flex:1 1 auto}
+.who{font-size:12px;opacity:.75}
+
+/* --- кнопки --- */
+.btn{min-height:44px;padding:0 var(--s4);border-radius:var(--r-ctl);
+     font:600 14px/1 system-ui,sans-serif;cursor:pointer;border:1px solid transparent}
+.btn-main{background:var(--accent-bg);color:var(--accent-fg)}
+.btn-main:hover{filter:brightness(1.08)}
+.btn-main:active{filter:brightness(.92)}
+.btn-ghost{background:transparent;color:var(--head-fg);border-color:var(--border)}
+:where(a,button,summary,[tabindex]):focus-visible,.scroller:focus{
+  outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--r-tag)}
+
+/* --- секции и карточки --- */
+main{padding-bottom:var(--s8)}
+section{margin-top:var(--s6)}
+h2{font-size:15px;line-height:1.3;font-weight:600;margin:0 0 var(--s3)}
+h2 .hint{font-weight:400;font-size:14px;line-height:1.4;color:var(--inset-fg);margin-left:var(--s2)}
+.card{background:var(--card-bg);color:var(--card-fg);border:1px solid var(--border);
+      border-radius:var(--r-card);padding:var(--s4);min-width:0}
+.grid{display:grid;gap:var(--s3)}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.people{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.halves{grid-template-columns:1fr}
+@media (min-width:1024px){.halves{grid-template-columns:3fr 2fr;align-items:start}}
+
+/* --- плитка KPI --- */
+.kpi .lbl{font-size:12px;font-weight:500;color:var(--inset-fg);display:block}
+.kpi .val{font-size:30px;line-height:1.1;font-weight:650;display:block;margin:var(--s2) 0 var(--s1)}
+.kpi .base{font-size:12px;line-height:1.4;color:var(--inset-fg);display:block}
+.unit{font-size:16px;font-weight:500;color:var(--inset-fg)}
+
+/* --- участники --- */
+.person .name{font-weight:600;display:flex;align-items:baseline;gap:var(--s2)}
+.person .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.person .role{font-size:12px;color:var(--inset-fg);font-weight:400}
+.person dl{display:grid;grid-template-columns:1fr auto;gap:var(--s1) var(--s2);margin:var(--s3) 0 0}
+.person dt{font-size:12px;color:var(--inset-fg)}
+.person dd{margin:0;text-align:right;font-weight:500}
+.person dd.big{font-size:16px;font-weight:650}
+
+/* --- таблицы --- */
+.scroller{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px}
+caption{text-align:left;font-size:12px;color:var(--inset-fg);padding-bottom:var(--s2)}
+th,td{padding:var(--s2) var(--s2);border-bottom:1px solid var(--border);text-align:left;
+      vertical-align:top}
+thead th{background:var(--inset-bg);color:var(--inset-fg);font-size:12px;font-weight:500;
+         position:sticky;top:0}
+td.num,th.num{text-align:right;white-space:nowrap}
+tfoot td{border-top:2px solid var(--border);border-bottom:none;font-weight:600}
+tbody tr:last-child td{border-bottom:none}
+
+/* --- мелочи --- */
+.badge{display:inline-block;font-size:12px;padding:1px 6px;border-radius:var(--r-tag);
+       background:var(--inset-bg);color:var(--inset-fg)}
+.good{color:var(--good)} .warn{color:var(--warn)} .crit{color:var(--crit)}
+.muted{color:var(--inset-fg)}
+details{margin-top:var(--s3)}
+summary{cursor:pointer;font-size:14px;font-weight:500;min-height:44px;display:flex;
+        align-items:center;gap:var(--s2)}
+details[open] .chev{transform:rotate(90deg)}
+.chev{display:inline-block;transition:transform 160ms var(--ease-out)}
+@media (prefers-reduced-motion:reduce){.chev{transition:none}}
+.legend{display:flex;flex-wrap:wrap;gap:var(--s3);margin-top:var(--s2);font-size:12px;
+        color:var(--inset-fg)}
+.legend span{display:flex;align-items:center;gap:var(--s1)}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+.note{font-size:14px;color:var(--inset-fg);line-height:1.5;max-width:68ch}
+footer{margin-top:var(--s8);padding-top:var(--s4);border-top:1px solid var(--border)}
+
+/* --- шапочная навигация: во втором блоке <style> дашборда, берём явно --- */
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;
+       border-radius:var(--r-tag);color:var(--head-fg);text-decoration:none;font-weight:500}
+.nav a:hover{box-shadow:inset 0 -2px 0 currentColor}
+.nav a[aria-current="page"]{font-weight:700;box-shadow:inset 0 -3px 0 currentColor}
+
+/* --- добавлено экраном «Сегодня» --- */
+.hod{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);align-items:baseline}
+.hod b{font-size:16px;font-weight:650}
+.polosa{height:8px;border-radius:4px;background:var(--inset-bg);overflow:hidden;margin-top:var(--s3)}
+.polosa i{display:block;height:100%;background:var(--accent-bg)}
+
+.status{border-left:4px solid var(--border);padding-left:var(--s4)}
+.status.ur-crit{border-left-color:var(--crit)}
+.status.ur-warn{border-left-color:var(--warn)}
+.status.ur-good{border-left-color:var(--good)}
+.status .zag{font-size:18px;line-height:1.3;font-weight:650;margin:0 0 var(--s2)}
+.status .zag.crit{color:var(--crit)} .status .zag.warn{color:var(--warn)}
+.status .zag.good{color:var(--good)}
+
+.cep{display:grid;gap:var(--s3);grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+     margin-top:var(--s4)}
+.cep .st{border-top:3px solid var(--border);padding-top:var(--s2)}
+.cep .st .lbl{font-size:12px;color:var(--inset-fg);display:block}
+.cep .st .val{font-size:22px;line-height:1.15;font-weight:650;display:block;margin-top:var(--s1)}
+.cep .st .base{font-size:12px;color:var(--inset-fg);display:block;margin-top:var(--s1)}
+
+.pers{list-style:none;margin:0;padding:0}
+.pers>li{padding:var(--s3) 0;border-bottom:1px solid var(--border)}
+.pers>li:last-child{border-bottom:none}
+.pers .imya{display:flex;align-items:baseline;gap:var(--s2);font-weight:600}
+.pers .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;align-self:center}
+.pers .role{font-size:12px;color:var(--inset-fg);font-weight:400}
+.pers .nums{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s2) var(--s3);
+            margin:var(--s2) 0 0}
+@media (min-width:480px){.pers .nums{grid-template-columns:repeat(3,1fr)}}
+.pers .nums div{min-width:0}
+.pers dt{font-size:12px;color:var(--inset-fg)}
+.pers dd{margin:0;font-weight:650;font-size:16px;white-space:nowrap}
+.pers .pochemu{font-size:14px;line-height:1.45;color:var(--inset-fg);margin:var(--s2) 0 0;
+               max-width:68ch}
+
+.dela{list-style:none;margin:0;padding:0}
+.dela>li{display:flex;gap:var(--s3);align-items:flex-start;padding:var(--s3) 0;
+         border-bottom:1px solid var(--border)}
+.dela>li:last-child{border-bottom:none}
+.dela .mark{flex:0 0 auto;width:22px;height:22px;border-radius:50%;margin-top:2px;
+            display:flex;align-items:center;justify-content:center;font-size:12px;
+            font-weight:700;background:var(--inset-bg);color:var(--inset-fg)}
+.dela .mark.crit{background:var(--crit);color:#fff}
+.dela .mark.warn{background:var(--warn);color:#fff}
+.dela .mark.accent{background:var(--accent-bg);color:var(--accent-fg)}
+.dela .telo{min-width:0;flex:1 1 auto}
+.dela .telo b{display:block;font-size:15px;line-height:1.35}
+.dela .telo p{margin:var(--s1) 0 0;font-size:14px;line-height:1.45;color:var(--inset-fg);
+              max-width:68ch}
+.dela a.act{display:inline-flex;align-items:center;min-height:44px;font-weight:600;
+            color:var(--accent-bg)}
+.dela button.act{display:inline-flex;align-items:center;min-height:44px;margin-right:var(--s4);
+            padding:0 var(--s4);border:1px solid var(--accent-bg);border-radius:8px;
+            background:var(--accent-bg);color:#fff;font:inherit;font-weight:650;cursor:pointer}
+.dela button.act.tihaya{background:none;color:var(--inset-fg);border-color:var(--line)}
+.dela button.act[disabled]{opacity:.6;cursor:default}
+
+.rost{display:grid;grid-template-columns:auto 1fr auto;gap:var(--s2) var(--s3);
+      align-items:center}
+.rost .m{font-size:14px;color:var(--inset-fg);white-space:nowrap}
+.rost .p{height:14px;background:var(--inset-bg);border-radius:3px;overflow:hidden}
+.rost .p i{display:block;height:100%;background:var(--c3);border-radius:3px}
+.rost .v{font-weight:650;white-space:nowrap;text-align:right}
+
+.dalshe{display:grid;gap:var(--s3);grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.dalshe a{display:block;padding:var(--s4);border:1px solid var(--border);
+          border-radius:var(--r-card);background:var(--card-bg);color:var(--card-fg);
+          text-decoration:none;min-height:44px}
+.dalshe a:hover{border-color:var(--accent-bg)}
+.dalshe a b{display:block;font-size:15px}
+.dalshe a span{display:block;font-size:14px;color:var(--inset-fg);margin-top:var(--s1)}
+</style>
+<script>
+/* Кабинет открывается двумя путями: прямо (localhost:8090 дома, 8772 на
+   сервере) и через дашборд по адресу /uchet — тогда прокси кладёт сюда
+   window.PREFIX. Все ссылки и запросы строятся от PRE, поэтому оба пути живут
+   без правок в коде экранов. */
+const PRE = window.PREFIX || "";
+addEventListener("DOMContentLoaded", () => { if(!PRE) return;
+  document.querySelectorAll('a[href^="/"]').forEach(a =>
+    a.setAttribute("href", PRE + a.getAttribute("href")));
+});
+</script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <h1>Семейный учёт</h1>
+    <span class="period" data-field="period">—</span>
+    <span class="spacer"></span>
+    <nav class="nav" aria-label="Разделы кабинета" data-region="nav"></nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="pusto" class="card" style="display:none;text-align:center;padding:var(--s8) var(--s4)" data-region="pusto">
+    <h2 id="pusto-zag" style="font-size:18px">—</h2>
+    <p class="note" id="pusto-text" style="margin:0 auto var(--s4)">—</p>
+    <a class="btn btn-main" id="pusto-knopka" href="/vvod"
+       style="display:inline-flex;align-items:center;text-decoration:none">Записать операцию</a>
+  </section>
+
+  <!-- 1. Ход месяца: экран обязан знать, какое сегодня число -->
+  <section data-region="hod" aria-labelledby="h-hod">
+    <h2 id="h-hod">Ход месяца <span class="hint" data-field="hod-hint">—</span></h2>
+    <div class="card">
+      <div class="hod" data-key="hod-fakty"></div>
+      <div class="polosa" role="img" data-key="hod-polosa" aria-label="ход месяца"><i style="width:0"></i></div>
+      <p class="note" style="margin:var(--s3) 0 0" data-field="hod-note">—</p>
+    </div>
+  </section>
+
+  <!-- 2. Состояние + куда делись деньги: главный ответ экрана -->
+  <section data-region="sostoyanie" aria-labelledby="h-sost">
+    <h2 id="h-sost">Как месяц <span class="hint">одной строкой, потом по шагам</span></h2>
+    <div class="card status" data-key="status">
+      <p class="zag" data-field="status-zag">—</p>
+      <p class="note" style="margin:0" data-field="status-text">—</p>
+      <div class="cep" data-key="cep" data-block="chart"></div>
+      <p class="note" style="margin:var(--s3) 0 0" data-field="cep-note">—</p>
+    </div>
+  </section>
+
+  <!-- 3. Каждому: то, ради чего сюда заходят -->
+  <section data-region="kazhdomu" aria-labelledby="h-kazh">
+    <h2 id="h-kazh">Каждому <span class="hint">заработал, на руки, своё накопление</span></h2>
+    <div class="card"><ul class="pers" data-list="pers"></ul></div>
+  </section>
+
+  <!-- 4. Что сделать: единственный блок, который требует действия -->
+  <section data-region="dela" aria-labelledby="h-dela">
+    <h2 id="h-dela">Что сделать <span class="hint" data-field="dela-hint">—</span></h2>
+    <div class="card"><ul class="dela" data-list="dela"></ul></div>
+  </section>
+
+  <!-- 5. Как идём: пай растёт годами, без истории смысла нет -->
+  <section data-region="istoriya" aria-labelledby="h-ist">
+    <h2 id="h-ist">Как идём <span class="hint">накопленный пай по месяцам</span></h2>
+    <div class="card" data-key="ist-box">
+      <div data-block="chart" data-key="ist-grafik"></div>
+      <details data-block="disclosure" data-key="ist-detali">
+        <summary><span class="chev">›</span>Числа по месяцам</summary>
+      <div class="scroller" data-block="table">
+        <table data-key="ist-tabl">
+          <caption>Каждый месяц считается тем же ядром из журнала фактов.</caption>
+          <thead><tr><th scope="col">Месяц</th><th scope="col" class="num">Доход извне</th>
+            <th scope="col" class="num">На руки</th><th scope="col" class="num">Прирост пая</th>
+            <th scope="col" class="num">Пай накоплен</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      </details>
+      <p class="note" style="margin:var(--s3) 0 0" data-field="ist-note">—</p>
+    </div>
+  </section>
+
+  <!-- 6. Почему столько: модель не спрятана, она уровнем ниже -->
+  <section data-region="dalshe" aria-labelledby="h-dalshe">
+    <h2 id="h-dalshe">Почему столько <span class="hint">подробности уровнем ниже</span></h2>
+    <div class="dalshe">
+      <a href="/mesyac"><b>Разбор месяца</b><span>Семь субсчетов, фонды, распределение выручки, сверка дохода до копейки</span></a>
+      <a href="/scheta"><b>Счета</b><span>Где физически лежат деньги и сходится ли это с учётом</span></a>
+      <a href="/sostav"><b>Состав и правила</b><span>Кто участник, кто делит общие затраты, что из этого следует</span></a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <p class="note" data-field="podpis">—</p>
+</footer>
+
+<script>
+"use strict";
+const el=(t,c,x)=>{const n=document.createElement(t); if(c)n.className=c;
+  if(x!==undefined&&x!==null)n.textContent=x; return n};
+const sklonenie=(n,a,b,c)=>{const d=Math.abs(n)%100, e=d%10;
+  return (d>10&&d<20)||e>4||e===0 ? c : e===1 ? a : b;};
+const money=v=>(v===null||v===undefined||isNaN(v))?"—":
+  Number(v).toLocaleString("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=v=>(isNaN(v)?"—":(v*100).toLocaleString("ru-RU",{maximumFractionDigits:1})+" %");
+const set=(f,t)=>{const n=document.querySelector('[data-field="'+f+'"]'); if(n)n.textContent=t};
+const slot=i=>getComputedStyle(document.documentElement)
+  .getPropertyValue("--c"+(((i-1)%4)+1)).trim();
+const MES=["январь","февраль","март","апрель","май","июнь","июль","август",
+           "сентябрь","октябрь","ноябрь","декабрь"];
+
+function navigaciya(){
+  const box=document.querySelector('[data-region="nav"]'); if(!box) return;
+  if(!DATA.nav){ box.remove(); return; }
+  DATA.nav.forEach(([h,t])=>{const a=el("a",null,t); a.href=PRE+h;
+    if(h===DATA.nav_tek) a.setAttribute("aria-current","page"); box.append(a)});
+}
+
+/* --- 1. Ход месяца --- */
+function hodMesyaca(){
+  const d=DATA, s=d.segodnya||{};
+  const den=s.den||0, vsego=s.dney||30, dolya=vsego?Math.min(1,den/vsego):0;
+  set("hod-hint", den? ("сегодня "+den+"-е из "+vsego) : "месяц закрыт");
+  const box=document.querySelector('[data-key="hod-fakty"]'); box.innerHTML="";
+  const fakty=[["Пришло извне", money(d.vneshniy_dohod)+" ₽"],
+               ["Обязательного потрачено", money(d.zatraty)+" ₽"],
+               ["Поступлений записано", String((d.ops||[]).length)]];
+  fakty.forEach(([l,v])=>{const w=el("span"); w.append(el("span","muted",l+" "), el("b",null,v));
+    box.append(w)});
+  const p=document.querySelector('[data-key="hod-polosa"]');
+  p.firstElementChild.style.width=(dolya*100).toFixed(1)+"%";
+  p.setAttribute("aria-label","Месяц пройден на "+Math.round(dolya*100)+" процентов");
+  set("hod-note", den
+    ? "Месяц пройден на "+Math.round(dolya*100)+" %. Числа ниже — по тому, что записано на сегодня; они ещё изменятся."
+    : "Месяц закрыт: числа окончательные.");
+}
+
+/* --- 2. Состояние и цепочка денег --- */
+function sostoyanie(){
+  const d=DATA, def=d.deficit_blok||{}, box=document.querySelector('[data-key="status"]');
+  const nepokryto=def.nepokryto||0, dolg=def.dolg||0, predel=d.predel_deficita||3;
+  let uroven="good", zag="", text="";
+  if(nepokryto>0.005){
+    uroven="crit";
+    zag="Месяц не окупает обязательное: не хватает "+money(def.deficit)+" ₽";
+    text="Из них "+money(nepokryto)+" ₽ не покрыто ничем — ни фондами, ни резервом. "+
+      "Это "+(def.mes_deficita||1)+"-й такой месяц подряд при пределе "+predel+
+      ": на "+(predel+1)+"-м расчёт останавливается и требует решения (Р-13). "+
+      "Имущественные паи на покрытие не трогаются.";
+  } else if(dolg>0.005){
+    uroven="warn";
+    zag="Обязательное закрыто, но остался долг фондам "+money(dolg)+" ₽";
+    text="Дефицит покрыт из фондов, долг гасится из накопления первого же месяца с превышением.";
+  } else {
+    uroven="good";
+    zag="Месяц окупает обязательное";
+    text="Обязательные траты закрыты доходом, накопление отчислено, дефицита нет.";
+  }
+  box.className="card status ur-"+uroven;   // не голое имя уровня: .crit красит всё внутри
+  const z=document.querySelector('[data-field="status-zag"]');
+  z.className="zag "+uroven; z.textContent=zag;
+  set("status-text", text);
+
+  // Цепочка: приток извне → обязательное → накопление → осталось.
+  // Основание — только внешний доход: внутренний оборот денег в семью не приносит.
+  const nak=(d.prirost_paev||0)+(d.ostatok_fondov||0);
+  const shagi=[["Пришло извне", d.vneshniy_dohod, "реальные деньги за месяц", 1],
+               ["Ушло на обязательное", d.zatraty, "еда, коммуналка, карманы", 2],
+               ["Отложено в накопление", nak, "имущественные паи и фонды", 3],
+               ["Осталось семье", d.lichnyy_dohod, "свободные деньги на всех", 4]];
+  const cep=document.querySelector('[data-key="cep"]'); cep.innerHTML="";
+  const baza=d.vneshniy_dohod||1;
+  shagi.forEach(([l,v,b,sl],i)=>{
+    const w=el("div","st"); w.style.borderTopColor=slot(sl);
+    w.append(el("span","lbl",l));
+    const val=el("span","val",money(v)+" ₽");
+    if(i===3&&v<0) val.classList.add("crit");
+    w.append(val, el("span","base", b+" · "+pct(v/baza)));
+    cep.append(w);
+  });
+  const summa=(d.zatraty||0)+nak+(d.lichnyy_dohod||0), raz=(d.vneshniy_dohod||0)-summa;
+  set("cep-note","Проверка: "+money(summa)+" ₽ из "+money(d.vneshniy_dohod)+
+      " ₽ разложено полностью"+(Math.abs(raz)>0.02?", расхождение "+money(raz)+" ₽ — открыть разбор месяца"
+      :" (расхождение "+money(Math.abs(raz))+" ₽ — округление долей до копейки)")+".");
+}
+
+/* --- 3. Каждому --- */
+function kazhdomu(){
+  const d=DATA, box=document.querySelector('[data-list="pers"]'); box.innerHTML="";
+  (d.people||[]).forEach(p=>{
+    const li=el("li");
+    const im=el("div","imya");
+    const dot=el("i","dot"); dot.style.background=slot(p.slot||1);
+    im.append(dot, el("b",null,p.name));
+    let rol=p.rebenok?"ребёнок":"взрослый";
+    if(p.otdelno) rol+=" · живёт отдельно";
+    im.append(el("span","role",rol));
+    li.append(im);
+    const dl=el("dl","nums");
+    const pary=[["Заработал", money(p.vyruchka)+" ₽", false],
+                ["На руки", money(p.na_ruki)+" ₽", p.na_ruki<0],
+                ["Своё накопление", money(p.pay)+" ₽", false]];
+    pary.forEach(([t,v,plohо])=>{const w=el("div");
+      w.append(el("dt",null,t), el("dd",plohо?"crit":null,v)); dl.append(w)});
+    li.append(dl);
+    // Минус без причины читается как обвинение. Причина обязана стоять рядом.
+    let why="";
+    if(p.na_ruki<0){
+      why="Минус — не долг: доля обязательных затрат за месяц оказалась больше его выручки. "+
+          "Не добрал до минимума "+money(p.nedobor)+" ₽"+
+          (p.pomoshch>0.005?", из фондов покрыто "+money(p.pomoshch)+" ₽":"; фондами не покрыто")+".";
+    } else if((p.vyruchka||0)===0){
+      why="Выручки за месяц нет: общие затраты на него не раскладываются, доли не начисляются.";
+    } else if(p.rebenok){
+      why="Ребёнок общих затрат не несёт (Р-4), поэтому вся выручка остаётся при нём.";
+    } else if(p.otdelno){
+      why="Живёт отдельно: участник семьи по выручке и паям, но еду и коммуналку общего дома не оплачивает.";
+    }
+    if(why) li.append(el("p","pochemu",why));
+    box.append(li);
+  });
+}
+
+/* --- 4. Что сделать --- */
+function dela(){
+  const d=DATA, def=d.deficit_blok||{}, box=document.querySelector('[data-list="dela"]');
+  box.innerHTML="";
+  const spisok=[];
+  if((def.nepokryto||0)>0.005)
+    spisok.push(["crit","!","Закрыть дыру в "+money(def.nepokryto)+" ₽",
+      "Дыра не рассасывается сама. Три выхода, и все считаются: больше дохода извне, "+
+      "меньше обязательных трат или пересмотр нормы накопления. Четвёртый месяц подряд "+
+      "с непокрытой дырой останавливает расчёт — это требование решения, а не поломка.",null,null]);
+  /* Недельный перевод. Одно действие, ради которого экран вообще открывают:
+     записал за неделю → увидел сумму → перевёл → отметил. Пока кабинет не
+     отвечает (мастерская, литерал), показываем прежнюю месячную строку. */
+  if(d.perevod_oshibka)
+    spisok.push(["crit","!","Перевод не отмечен", d.perevod_oshibka+
+      " Деньги в банке это не отменяет — отметьте позже или поправьте счета вручную.",
+      "/scheta","Открыть счета"]);
+  const per = d.perevod;
+  if(per && per.ok){
+    const s_daty = per.s_daty ? per.s_daty.slice(8)+"."+per.s_daty.slice(5,7) : "начала месяца";
+    if(per.k_perevodu > 0.005){
+      let txt = "Записано с "+s_daty+": "+per.novyh_postupleniy+" "+
+        sklonenie(per.novyh_postupleniy,"поступление","поступления","поступлений")+
+        " на "+money(per.novyh_na_summu)+" ₽. Доля накопления "+
+        (per.dolya*100).toFixed(1).replace(".",",")+" % — "+
+        (per.osnova==="план" ? "по плану месяца"
+          : "по факту: плана нет, доля занижена, при закрытии месяца придётся доложить")+".";
+      if(per.schet) txt += " Счёт: «"+per.schet.nazvanie+"»";
+      if(per.istochnik) txt += ", переводим с «"+per.istochnik.nazvanie+"»";
+      txt += ".";
+      if(per.istochnik && !per.hvatit_na_istochnike)
+        txt += " На нём сейчас меньше — переводите оттуда, где деньги есть, и поправьте счёт в отметке.";
+      spisok.push(["accent","₽","Перевести на накопительный "+money(per.k_perevodu)+" ₽",
+        txt,"/scheta","Счета",
+        window.OTMETIT_PEREVOD && per.mozhno_otmetit ? ["Перевёл", window.OTMETIT_PEREVOD] : null]);
+    }else if(per.perevedeno > 0.005){
+      const posl = (per.perevody||[])[per.perevody.length-1];
+      spisok.push(["accent","✓","Накопление переведено: "+money(per.perevedeno)+" ₽",
+        "За месяц отложено всё, что причиталось с записанного дохода. Новое поступление "+
+        "снова покажет сумму — переводить каждую неделю проще, чем один раз в конце.",null,null,
+        window.OTMENIT_PEREVOD && posl ? ["Отменить", ()=>window.OTMENIT_PEREVOD(posl.id)] : null]);
+    }
+    if(per.s_zapasom > 0.005)
+      spisok.push(["warn","·","Переведено с запасом на "+money(per.s_zapasom)+" ₽",
+        "Это не ошибка: лишнее просто уменьшит следующий перевод. Если сумма отмечена неверно — "+
+        "отмените отметку.",null,null]);
+  }else if((d.nakoplenie_vsego||0)>0.005){
+    spisok.push(["accent","₽","Перевести на накопительный счёт "+money(d.nakoplenie_vsego)+" ₽",
+      "Субсчета учётные, деньги физически лежат в одном месте. Перевод делает человек — "+
+      "кабинет только называет сумму.","/scheta","Открыть счета"]);
+  }
+  if((def.dolg||0)>0.005)
+    spisok.push(["warn","·","Долг фондам "+money(def.dolg)+" ₽",
+      "Гасится сам из накопления первого месяца, где доход превысит обязательное. Делать ничего не надо.",null,null]);
+  if(d.plan&&d.plan.est===false)
+    spisok.push(["warn","·","Завести план месяца",
+      "Без плана не видно, идём мы по нему или нет, и каждое поступление делится вслепую. "+
+      "Планировать по нижней границе ожидаемого (Р-16).","/plan","Открыть план"]);
+  if(d.neizvestnye&&Object.keys(d.neizvestnye).length)
+    spisok.push(["crit","!","В журнале есть имена, которых нет в составе",
+      Object.keys(d.neizvestnye).join(", ")+" — такие записи выпадают из расчёта.","/sostav","Поправить состав"]);
+  if(!spisok.length)
+    spisok.push(["accent","✓","Ничего не требуется",
+      "Обязательное закрыто, накопление отчислено, дыр и долгов нет.",null,null]);
+  spisok.forEach(([u,zn,zag,txt,ssyl,podpis,act])=>{
+    const li=el("li");
+    li.append(el("span","mark "+u,zn));
+    const t=el("div","telo");
+    t.append(el("b",null,zag), el("p",null,txt));
+    if(act){
+      const b=el("button", "act"+(zn==="✓"?" tihaya":""), act[0]);
+      b.type="button";
+      b.onclick=()=>{ b.disabled=true; Promise.resolve(act[1]()).finally(()=>{b.disabled=false}) };
+      t.append(b);
+    }
+    if(ssyl){const a=el("a","act",podpis+" →"); a.href=PRE+ssyl; t.append(a)}
+    li.append(t); box.append(li);
+  });
+  set("dela-hint", spisok.length===1&&spisok[0][1]==="✓" ? "чисто" : spisok.length+" шт.");
+}
+
+/* --- 5. Как идём --- */
+function istoriya(){
+  const d=DATA, ist=(d.istoriya||[]).slice();
+  const tb=document.querySelector('[data-key="ist-tabl"] tbody');
+  const gr=document.querySelector('[data-key="ist-grafik"]');
+  tb.innerHTML=""; gr.innerHTML="";
+  if(ist.length<2){
+    document.querySelector('[data-key="ist-detali"]').style.display="none";
+    set("ist-note","Пока в журнале "+(ist.length||0)+" месяц. Смысл этого блока — показать, "+
+      "растёт ли имущественный пай: система Чартаева окупается годами накопления, а не одним "+
+      "месяцем. Второй месяц включит и график, и таблицу.");
+    return;
+  }
+  // Горизонтальные полосы, а не столбцы: месяцев со временем станет много,
+  // а телефон растёт вниз, а не вбок. Столбцы в SVG на всю ширину карточки
+  // растягивались в блоки и переставали читаться как график.
+  const max=Math.max(...ist.map(r=>r.pai_itogo||0),1);
+  const setka=el("div","rost");
+  setka.setAttribute("role","img");
+  setka.setAttribute("aria-label","Накопленный имущественный пай по месяцам: "+
+    ist.map(r=>r.mesyac+" "+money(r.pai_itogo)+" рублей").join(", "));
+  ist.forEach(r=>{
+    setka.append(el("span","m",r.mesyac));
+    const p=el("span","p"), i=el("i");
+    i.style.width=Math.max(1.5,(r.pai_itogo||0)/max*100).toFixed(1)+"%";
+    p.append(i); setka.append(p);
+    setka.append(el("span","v",money(r.pai_itogo)+" ₽"));
+  });
+  gr.append(setka);
+  ist.forEach(r=>{
+    const tr=el("tr"); const th=el("th",null,r.mesyac); th.scope="row";
+    tr.append(th, el("td","num",money(r.vneshniy_dohod)), el("td","num",money(r.na_ruki)),
+              el("td","num",money(r.prirost_paev)), el("td","num",money(r.pai_itogo)));
+    tb.append(tr);
+  });
+  const per=ist[ist.length-1], prev=ist[ist.length-2];
+  const rost=(per.pai_itogo||0)-(prev.pai_itogo||0);
+  set("ist-note","За последний месяц накопленный пай вырос на "+money(rost)+
+    " ₽ и составляет "+money(per.pai_itogo)+" ₽. Это доля семьи в собственном капитале — "+
+    "то, что остаётся после всех трат и на что начисляется доход (Р-9).");
+}
+
+function fokusVRaskrytii(){
+  document.querySelectorAll("details").forEach(d=>{
+    const sc=d.querySelector(".scroller"); if(!sc) return;
+    const obnovit=()=>{ if(d.open) sc.setAttribute("tabindex","0");
+                        else sc.removeAttribute("tabindex") };
+    d.addEventListener("toggle", obnovit); obnovit();
+  });
+}
+
+function pustoyEkran(txt){
+  document.querySelector('[data-region="pusto"]').style.display="";
+  document.querySelector("#pusto-zag").textContent="Пока считать нечего";
+  document.querySelector("#pusto-text").textContent=txt;
+  ["hod","sostoyanie","kazhdomu","dela","istoriya"].forEach(r=>{
+    const n=document.querySelector('[data-region="'+r+'"]'); if(n)n.style.display="none"});
+}
+
+function narisovat(){
+  navigaciya();
+  set("period", DATA.period||"");
+  if(DATA.pusto){
+    // На пустом месяце подпись про ядро — единственное, что мы честно можем сказать.
+    set("podpis","Ядро считает месяц из журнала фактов. Пока фактов нет, считать нечего.");
+    pustoyEkran(DATA.pusto); return;
+  }
+  hodMesyaca(); sostoyanie(); kazhdomu(); dela(); istoriya(); fokusVRaskrytii();
+  let pravila=(DATA.rules||"").trim();
+  if(pravila.toLowerCase().startsWith("нормативы:")) pravila=pravila.slice(10).trim();
+  set("podpis", "Числа считает ядро yadro/raschet.py из журнала фактов при каждом открытии. "+
+    "В базе лежат только факты — правила можно менять, накопленное не портится."+
+    (pravila ? " Нормативы: "+pravila+"." : ""));
+}
+</script>
+<script>
+/* ДАННЫЕ кабинета. Тот же объект собирается из /api/mesyac и /api/istoriya.
+   Разметка и отрисовка выше не тронуты — за это и держим общий исходник
+   /root/dizain/chartaev-uchet/sborka/segodnya-sborka.py. */
+let DATA = {};
+
+function segodnyaMesyac(){
+  const t=new Date(), g=t.getFullYear(), m=t.getMonth();
+  return {gm: g+"-"+String(m+1).padStart(2,"0"),
+          nazvanie: MES[m]+" "+g,
+          den: t.getDate(), dney: new Date(g, m+1, 0).getDate()};
+}
+
+async function zagruzit(){
+  const s=segodnyaMesyac();
+  let d;
+  try{ d = await (await fetch(PRE+"/api/mesyac?mesyac="+s.gm)).json(); }
+  catch(e){ d = {ok:false, err:"кабинет не отвечает"}; }
+  if(!d.ok){
+    DATA = {period: s.nazvanie, nav: NAV, nav_tek: "/",
+            pusto: (d.err||"нет данных за месяц")+
+              ". Заведите состав семьи и запишите первое поступление — дальше всё посчитается само."};
+    narisovat(); return;
+  }
+  let ist = [];
+  try{ const h = await (await fetch(PRE+"/api/istoriya")).json();
+       if(h.ok) ist = h.mesyacy; }catch(e){}
+  let per = null;
+  try{ per = await (await fetch(PRE+"/api/perevod?mesyac="+s.gm)).json(); }catch(e){}
+  DATA = Object.assign({}, d, {
+    perevod: per && per.ok ? per : null,
+    period: s.nazvanie,
+    segodnya: {den: s.den, dney: s.dney},
+    nav: NAV, nav_tek: "/",
+    predel_deficita: 3,
+    istoriya: ist
+  });
+  narisovat();
+}
+
+const NAV = [["/", "Сегодня"], ["/vvod", "Записать"], ["/plan", "План"],
+             ["/mesyac", "Месяц"], ["/chto-esli", "Что если"],
+             ["/scheta", "Счета"], ["/sostav", "Состав"]];
+
+/* Отметка перевода. Ничего не пишет в журнал операций: перевод между своими
+   счетами — не выручка и не затрата, ядро о нём знать не должно. Сдвигаются
+   только остатки счетов, и ровно так же откатываются при отмене. */
+async function poslat(put, telo){
+  const r = await fetch(PRE+put, {method:"POST",
+    headers:{"Content-Type":"application/json"}, body:JSON.stringify(telo||{})});
+  return await r.json();
+}
+window.OTMETIT_PEREVOD = async function(){
+  const p = DATA.perevod || {};
+  const r = await poslat("/api/perevod", {summa: p.k_perevodu,
+              so_scheta: (p.istochnik||{}).id || null,
+              na_schet: (p.schet||{}).id || null, sozdal: ""});
+  DATA.perevod_oshibka = r.ok ? null : (r.err || "кабинет не ответил.");
+  if(r.ok) DATA.perevod = r.perevod;
+  dela();
+};
+window.OTMENIT_PEREVOD = async function(id){
+  const r = await poslat("/api/perevod/udalit", {id: id});
+  DATA.perevod_oshibka = r.ok ? null : (r.err || "кабинет не ответил.");
+  if(r.ok) DATA.perevod = r.perevod;
+  dela();
+};
+zagruzit();
+</script>
+</body>
+</html>
