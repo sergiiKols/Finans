@@ -6,6 +6,10 @@
 половину входящего баланса вместе с числом «сколько его было», и обе части
 тождества уменьшатся одинаково. Приёмка внесла 10 потерь, старый прогон поймал 2.
 
+ Исправлено 20.10.2026: проверки 6 и 8 ждали «внешний приток × доля» и ругались на то, что
+ ядро делает по решениям (внутренний оборот — выручка продавца, Р-1; доход на капитал уходит в
+ фонд инвестиций; минимум взноса, Р-14; погашение долга). Ожидания приведены к правилам.
+ Осталось одно настоящее: «деньги» при коммуналке из накопления и нехватке фондов.
  Добавлено 25.08.2026: пропущенные проверки — доля управления, распределение
  дохода на паи, рублевый норматив накопления (P2-2). Число намеренных
  поломок в самотесте: 31.
@@ -318,12 +322,23 @@ def narusheniya_delezha(u, par, mes, gde, R_):
         # Пропускаем: при входящем остатке (накопилось за предыдущие месяцы),
         # при коммуналке из резерва (фонд управления может частично идти на покрытие),
         # и когда prihod <= tek_balance (баланс накоплен, а не заработан в этом месяце).
-        if (abs(fondy_bal) < DOPUSK and not par.get("kommunalka_v_nakoplenii")
+        iz_upr = any(p_.get("iz_fonda") == "upravlenie" for p_ in (mes.get("vnutrennie_pokupki") or []))
+        if (abs(fondy_bal) < DOPUSK and not par.get("kommunalka_v_nakoplenii") and not iz_upr
                 and u.fondy.prihod.get("upravlenie", 0) > u.fondy["upravlenie"] + DOPUSK):
-            ozhid_upr = u.vneshniy_pritok * dolya_nak_upr
+            # Доход на капитал: его доля управления (kap.dolya_upravleniya) тоже идёт организатору.
+            upr_kap6 = kap.get("dolya_upravleniya", 0.05)
+            ozhid_upr = ((u.vneshniy_pritok - u.kapital_dohod) * dolya_nak_upr
+                         + u.kapital_dohod * upr_kap6)
             fakt_upr = sum(u.upravlenie.values())
             porog = max(DOPUSK, ozhid_upr * 0.10)
-            if abs(fakt_upr - ozhid_upr) > porog:
+            # Внутренний оборот (покупки, выплаты из фондов) — тоже выручка продавца, и доля
+            # управления берётся с неё снова (Р-1). Размер оборота из входа не предсказать
+            # (покупки долями), поэтому с оборотом проверяем только нижнюю границу.
+            if est_oborot:
+                otklonenie = max(0.0, ozhid_upr - fakt_upr)
+            else:
+                otklonenie = abs(fakt_upr - ozhid_upr)
+            if otklonenie > porog:
                 ploho.append(("доля управления",
                               f"все участники получили {fakt_upr:.2f}, "
                               f"по формуле vneshniy_pritok {u.vneshniy_pritok:.2f} × "
@@ -371,12 +386,20 @@ def narusheniya_delezha(u, par, mes, gde, R_):
     #    При vneshniy_pritok <= 0 — пропускаем (база отрицательная, формула не работает).
     if (par.get("kommunalka_v_nakoplenii") or est_oborot
             or u.vneshniy_pritok <= DOPUSK
+            or any(x < 0 for x in mes.get("vneshnyaya_vyruchka", {}).values())  # нетто или брутто — решение не принято
             or mes.get("balans")):
         pass  # пропускаем
     else:
-        ozhid_nak = u.vneshniy_pritok * u.norma
-        sum_prihod = sum(u.fondy.prihod.values())
-        if abs(sum_prihod - ozhid_nak) > max(DOPUSK, ozhid_nak * 1e-4):
+        # Доход на капитал не делится по нормативу: за вычетом доли управления он весь
+        # уходит в фонд инвестиций (raschet.py:519–526). Остальная выручка — по норме.
+        upr_kap = kap.get("dolya_upravleniya", 0.05) if org and org in u.uchastniki else 0.0
+        ozhid_nak = ((u.vneshniy_pritok - u.kapital_dohod) * u.norma
+                     + u.kapital_dohod * (1 - upr_kap))
+        # Перекладывание между фондами и погашение долга — приход, который не из выручки.
+        sum_prihod = sum(u.fondy.prihod.values()) - u.mezhdu_fondami
+        # Минимум взноса в накопление (Р-14): доплата сверх нормы ложится в фонды.
+        verh = ozhid_nak + sum(u.min_doplata.values())
+        if not (ozhid_nak - max(DOPUSK, ozhid_nak * 1e-4) <= sum_prihod <= verh + max(DOPUSK, verh * 1e-4)):
             ploho.append(("рублёвый норматив накопления",
                           f"суммарный приход в фонды {sum_prihod:.2f}, "
                           f"по формуле vneshniy_pritok {u.vneshniy_pritok:.2f} × norma "
